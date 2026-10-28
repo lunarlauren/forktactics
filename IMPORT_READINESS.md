@@ -5,26 +5,27 @@ GitHub reports this repository as **public** (rechecked 2026-10-27).
 
 ## Latest verified local candidate
 
-- Development pass: **45**; local commit `6e2d600dc300b29c3cfca621444c4439479b79aa` on `fix/planner-malformed-catalog-boundary`
-- Source archive: `forktactics-pass-045.zip`
-- SHA-256 (archive): `6eeece9c6cb26f58c430deee6302259b09fe579855c8b49f4433c450947da96f`
-- Git bundle: `forktactics-pass-045.git.bundle`
-- SHA-256 (bundle): `03ac0b49610078a78c39e5f8c44754721d0d8fb6bb954b67054e862a8832ad72`
-- Zero-dependency domain suite: **121/121 passed** on 2026-10-27, including a fresh archive extraction.
+- Development pass: **46**; local commit `b0cd659aa80becb1d41121343ee16855dc108080` on `fix/skip-unaffordable-standalone-overflow`
+- Source archive: `forktactics-pass-046.zip`
+- SHA-256 (archive): `1141cbcca32e303bd95b5b40df60252b0087d9ac732016a43fe89f958e6a1322`
+- Git bundle: `forktactics-pass-046.git.bundle`
+- SHA-256 (bundle): `947c4432d636ee207562e92524879eaf514f85cf9491c17697c1fe552f8f4398`
+- Dependency-free domain suite: **124/124 passed**, including a fresh archive extraction.
 - Strict domain TypeScript compilation: **passed**.
-- TypeScript/TSX syntax parse: **48 files, zero syntax errors**.
-- New regression tests: **2 failed before the fix and passed afterward**.
+- TypeScript/TSX syntax parse: **49 files, zero syntax errors**.
+- Red regression: a Yucked expensive recipe failed with price overflow before the fix.
+- Independent planner parity: **150/150** valid seeded scenarios matched the previous candidate.
 - Full React typecheck, ESLint, Vitest, browser tests, production build: **not verified**.
 - Dependency lockfile: **missing**; npm registry access is unavailable in this environment.
 
-## Pass 45 change
+## Pass 46 change
 
-The direct `suggestWeek` entry point previously accessed `recipe.id.trim()` before verifying the catalog shape. Invalid JSON-like input could throw a raw TypeError. It now validates the array size and recipe ID types before iterating and computing standalone quotes. Existing planning and grocery behavior remains unchanged for valid inputs.
+The planner previously calculated standalone package prices for *all* recipes, including Yucked ones. A valid but extremely expensive recipe could overflow safe integer cents and abort the entire suggestion even when an affordable dinner was available. The planner now validates the **entire catalog** before filtering, prices only eligible recipes, and treats the specific safe-integer quote overflow as unaffordable rather than fatal. All other validation errors still fail closed.
 
 ## Safe import steps
 
 1. Convert this repository to **private** and recheck its visibility.
-2. Import the full source from pass 45 to a **new feature branch**, not directly to `main`. Exclude `*.tsbuildinfo`, `.domain-check/`, `node_modules/`, and `dist/`.
+2. Import the full source from pass 46 to a **new feature branch**, not directly to `main`. Exclude `*.tsbuildinfo`, `.domain-check/`, `node_modules/`, and `dist/`.
 3. Generate and commit `package-lock.json` using working npm registry access. Change CI to `npm ci`.
 4. Run domain tests, full TypeScript, ESLint, Vitest, production build, and browser checks; investigate failures before merging.
 5. Review browser-data migration before any Cloudflare cutover.
