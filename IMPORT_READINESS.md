@@ -1,34 +1,30 @@
 # Private import readiness — Forktactics
 
-GitHub reports this repository as **public** (rechecked 2026-10-28).
-**Do not upload application source** until Settings → General → Danger Zone → Change repository visibility → Private is completed.
+**Status (2026-10-28):** The connected repository still reports **public** visibility. Do not upload application source until it is changed to **private** in Settings → General → Danger Zone → Change repository visibility.
 
-## Latest verified local candidate
+## Latest locally verified source — Pass 49
 
-- Development pass: **48**; local commit `c55e29c71d8dc31fe8349b763f7920388c78f1e8` on `fix/overflowing-reuse-estimates`
-- Source archive: `forktactics-pass-048.zip`
-- SHA-256 (archive): `0a1219de8d46cabb86b75d60320d5eec248fd57314f2ee80e9deafd28740c232`
-- Git bundle: `forktactics-pass-048.git.bundle`
-- SHA-256 (bundle): `d8d9dd801c7f68660b4279b4589140001e99e5af086dc73963680b37091bb60f`
-- Dependency-free domain suite: **130/130 passed**, including a fresh archive extraction and independently applied patch.
-- Strict domain TypeScript compilation: **passed**.
-- TypeScript/TSX syntax parse: **48 files, zero syntax errors**.
-- Red regressions: two separate-purchase overflow cases failed before the fix (126/128 tests passed); all passed after the fix.
-- Independent parity: **300/300** seeded ordinary-price planning and package-reuse comparisons matched pass 47.
-- Full React typecheck, ESLint, Vitest, browser tests, production build: **not verified**.
-- Dependency lockfile: **missing**; npm registry returned `EAI_AGAIN` on 2026-10-28.
+- Archive: `forktactics-pass-049.zip`; SHA-256: `cfe4beff8b0e3c0fab3ee17a32bd8d591a419fd0eb390585f42b5bf8397af965`
+- Git bundle: `forktactics-pass-049.git.bundle`; SHA-256: `fb268fcf5e764d7aa75fb29df64a57be13dbc0202df839ac357c23bcd229f84e`
+- Local patch: `forktactics-pass-049.patch`; SHA-256: `896a091de0d86710bb5acfc700091231c2091170c580ae5dca7e92c0cca5eb95`
+- Local feature branch: `feature/canonical-grocery-ids` (offline archive-derived working tree; local commit `f84222c`).
+- Node domain tests: **131/131 passed** from a fresh extracted archive.
+- Strict domain TypeScript compilation: **passed** (included in domain verification).
+- TS/TSX parser: **48 files, zero syntax errors**.
+- New regression failed on the original Pass 48 implementation and passed after the fix.
+- Full React typecheck, Vitest, ESLint, browser tests, production build: **NOT verified**; npm registry access was unavailable.
+- Dependency lockfile: **missing**; must be generated and committed before switching CI to `npm ci`.
 
-## Pass 48 change
+## Pass 49 change
 
-A valid consolidated grocery basket can be affordable even when hypothetical separate package purchases exceed JavaScript's maximum safe integer. Previously, the planner or reuse-comparison UI could throw and hide the valid week. Internal reuse ranking now uses exact `bigint` cents; unrepresentable comparison figures are returned as `null` and explained in the UI, rather than crashing or displaying rounded money. Actual basket prices and budget checks remain safe integer cents. New tests cover exact search, 17-recipe beam search, and unavailable comparison values.
+Direct whole-package grocery quotes now reject noncanonical recipe/product/ingredient IDs (padded, whitespace-only, >200 characters) before pricing. This prevents shopping and pantry keys changing after save/reload, while preserving delimiter-containing IDs. Earlier Pass 48 fixed package-reuse comparison overflow using `bigint`.
 
-## Safe import steps
+## Safe import plan
 
-1. Convert this repository to **private** and recheck its visibility.
-2. Import the full source from pass 48 to a **new feature branch**, not directly to `main`. Exclude `*.tsbuildinfo`, `.domain-check/`, `node_modules/`, and `dist/`.
-3. Generate and commit `package-lock.json` using working npm registry access. Change CI to `npm ci`.
-4. Run domain tests, full TypeScript, ESLint, Vitest, production build, and browser checks; investigate failures before merging.
-5. Review browser-data migration before any Cloudflare cutover.
-6. Open/review a source-code PR against `main`; merge only when required checks pass.
+1. Change repository visibility to private; **verify** via GitHub metadata.
+2. Import Pass 49 source onto a dedicated feature branch, not `main`. Exclude `.domain-check`, `*.tsbuildinfo` and local Git metadata.
+3. Generate and commit a dependency lockfile using a working npm registry. Switch CI to `npm ci`.
+4. Run domain tests, full React typecheck, ESLint, Vitest, production build and browser accessibility checks; investigate failures before merging.
+5. Open a source import PR and merge only after required checks pass. Keep the existing `lunarlauren/YumPlan` repository and live Cloudflare deployment unchanged.
 
-The original `lunarlauren/YumPlan` repository and its live Cloudflare deployment must remain unchanged.
+This is an import preparation PR, **not** a source-code PR or deployment approval.
