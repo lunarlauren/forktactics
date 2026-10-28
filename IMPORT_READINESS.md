@@ -2,22 +2,22 @@
 
 **Status (2026-10-28):** The connected repository still reports **public** visibility. Do not upload application source until it is changed to **private** in Settings → General → Danger Zone → Change repository visibility.
 
-## Latest locally verified source — Pass 52
+## Latest locally verified source — Pass 53
 
-- Archive: `forktactics-pass-052.zip`; SHA-256: `c37e559cb90290930e59a40628f84df16d2b88d49247b6a6b6d35bf0589d74fe`
-- Git bundle: `forktactics-pass-052.git.bundle`; SHA-256: `ef6a5295c449f2c0df259f52e8587f82c09ff9973a4a7161aa25429fc68a48d8`
-- Incremental patch: `forktactics-pass-052.patch`; SHA-256: `81125ca42f0daef4188a4dbc66f7b494146e547e4695dcac93788dc28ba32d9f`
-- Local feature branch: `fix/canonical-presentation-basket`; commit `ca97e6314cb66a6c5dc3e006032bec01c05430cc`.
-- Node domain tests: **135/135 passed** from a fresh extracted archive, including strict domain TypeScript compilation.
+- Archive: `forktactics-pass-053.zip`; SHA-256: `ba94f0ffb38baca0d8e4dd6dbb5de81bdb7ce115bf75d9f46857b1450e3d2e55`
+- Git bundle: `forktactics-pass-053.git.bundle`; SHA-256: `8b86e892769fce69dcb3f9380b0a1929bd93e2f6f9aa41ae130bed31e5ac19e8`
+- Incremental patch: `forktactics-pass-053.patch`; SHA-256: `868f80166aead7f169f24176d49fa0f69d0f0a651858dcbda93a28946095cdba`
+- Local feature branch: `fix/grocery-explanation-input-bounds`; commit `8d80560941c72bee05084de0d2d6401910fbf99a`.
+- Node domain tests: **137/137 passed** from a fresh extracted archive, including strict domain TypeScript compilation.
 - Two new regressions **failed before fix** and passed afterward.
 - TS/TSX parser: **49 files, zero syntax errors**.
 - Full React typecheck, Vitest, ESLint, browser tests and production build: **NOT verified**; local npm registry returned `EAI_AGAIN`.
 
-## Pass 52 changes
+## Pass 53 changes
 
-- Presentation/export basket validation now rejects noncanonical ingredient IDs and more than 10,000 basket lines, matching the catalog constraints.
+- Read-only grocery explanations now reject malformed or oversized selected-dinner arrays (5,000 limit) and malformed/oversized basket line arrays (10,000 limit) before iteration. Controlled errors replace raw JavaScript exceptions. Existing specific unit/quantity mismatch diagnostics remain intact.
 - A source-free `package.json` and branch-scoped `.github/workflows/lockfile.yml` were added to this preparation PR.
-- **Lockfile bootstrapped on GitHub:** GitHub Actions bot committed `package-lock.json` as `8a908311b878d580e69932b6e0c34039e6f20fab` after its workflow's dependency resolution and locked-install steps. GitHub Actions verification run 40745896036 independently confirmed the lockfile requirement and **npm ci succeeded**, but the domain test step failed because the source is withheld; later React gates were skipped. The lockfile is on the preparation branch, not in the local Pass 52 source archive.
+- **Lockfile bootstrapped on GitHub:** GitHub Actions bot committed `package-lock.json` as `8a908311b878d580e69932b6e0c34039e6f20fab` after its workflow's dependency resolution and locked-install steps. GitHub Actions verification run 40745896036 independently confirmed the lockfile requirement and **npm ci succeeded**, but the domain test step failed because the source is withheld; later React gates were skipped. The lockfile is on the preparation branch, not in the local Pass 53 source archive.
 - **Full application CI is not green:** application source is deliberately withheld from this public repository. The existing CI job cannot compile/test/build the app until source is privately imported. Do not merge this draft PR as production-ready.
 
 ## Safe import plan
