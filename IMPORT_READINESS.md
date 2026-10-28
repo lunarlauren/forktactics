@@ -1,31 +1,30 @@
 # Private import readiness — Forktactics
 
-**Status (2026-10-28):** The connected repository reports **public** visibility. Do not upload application source until it is changed to **private** in Settings → General → Danger Zone → Change repository visibility.
+**Status (2026-10-28):** The connected repository still reports **public** visibility. Do not upload application source until it is changed to **private** in Settings → General → Danger Zone → Change repository visibility.
 
-## Latest locally verified source — Pass 51
+## Latest locally verified source — Pass 52
 
-- Archive: `forktactics-pass-051.zip`; SHA-256: `92d6b2b9235cd90b97b7f6eb1c6fe0ddd5e46774e588344696fe22053a189c29`
-- Git bundle: `forktactics-pass-051.git.bundle`; SHA-256: `4a536682a1b1450c4902aed684df8c73e59f5efdb805c3695cc28049e856118e`
-- Incremental patch: `forktactics-pass-051.patch`; SHA-256: `e9d8ca0440b1a3ab82bc41cf65117ab56be4151428e7ba6fd03f372ce6a8f844`
-- Local feature branch: `fix/canonical-preference-ids`; commit `eaab64d6dca0d9643e0e30702c222f2ce5274c3f`.
-- Node domain tests: **133/133 passed** from a fresh extracted archive, including strict domain TypeScript compilation.
-- New regression **failed before fix** and passed afterward.
+- Archive: `forktactics-pass-052.zip`; SHA-256: `c37e559cb90290930e59a40628f84df16d2b88d49247b6a6b6d35bf0589d74fe`
+- Git bundle: `forktactics-pass-052.git.bundle`; SHA-256: `ef6a5295c449f2c0df259f52e8587f82c09ff9973a4a7161aa25429fc68a48d8`
+- Incremental patch: `forktactics-pass-052.patch`; SHA-256: `81125ca42f0daef4188a4dbc66f7b494146e547e4695dcac93788dc28ba32d9f`
+- Local feature branch: `fix/canonical-presentation-basket`; commit `ca97e6314cb66a6c5dc3e006032bec01c05430cc`.
+- Node domain tests: **135/135 passed** from a fresh extracted archive, including strict domain TypeScript compilation.
+- Two new regressions **failed before fix** and passed afterward.
 - TS/TSX parser: **49 files, zero syntax errors**.
-- CI YAML: parsed and checked for lockfile requirement, read-only permissions, locked installation and all quality gates.
-- Full React typecheck, Vitest, ESLint, browser tests and production build: **NOT verified**; npm registry returned `EAI_AGAIN`.
-- Dependency lockfile: **missing**; must be generated and committed before CI can pass.
+- Full React typecheck, Vitest, ESLint, browser tests and production build: **NOT verified**; local npm registry returned `EAI_AGAIN`.
 
-## Pass 51 changes
+## Pass 52 changes
 
-- The direct weekly planner now rejects padded or overlong preference IDs instead of silently ignoring an invalid Yuck. Canonical IDs from previous weeks remain supported.
-- A **source-free CI workflow** has been added to this import-preparation branch at `.github/workflows/ci.yml`. It explicitly requires `package-lock.json`, runs `npm ci`, domain tests, full TypeScript, ESLint, Vitest and the production build.
-- **CI is not green**: the source and lockfile are deliberately absent from this public repository. Do not merge this draft PR as a production-ready change.
+- Presentation/export basket validation now rejects noncanonical ingredient IDs and more than 10,000 basket lines, matching the catalog constraints.
+- A source-free `package.json` and branch-scoped `.github/workflows/lockfile.yml` were added to this preparation PR.
+- **Lockfile bootstrapped on GitHub:** GitHub Actions bot committed `package-lock.json` as `8a908311b878d580e69932b6e0c34039e6f20fab` after its workflow's dependency resolution and locked-install steps. The lockfile is on the preparation branch, not in the local Pass 52 source archive.
+- **Full application CI is not green:** application source is deliberately withheld from this public repository. The existing CI job cannot compile/test/build the app until source is privately imported. Do not merge this draft PR as production-ready.
 
 ## Safe import plan
 
 1. Change repository visibility to private; **verify** via GitHub metadata.
-2. Import Pass 51 source onto a dedicated feature branch, not `main`. Exclude `.domain-check`, `*.tsbuildinfo`, and local Git metadata.
-3. Generate and commit `package-lock.json` using a working npm registry.
+2. Import Pass 52 source onto a dedicated feature branch, not `main`. Exclude `.domain-check`, `*.tsbuildinfo`, and local Git metadata.
+3. Bring over the newly generated `package-lock.json` from this preparation branch; verify that `npm ci` resolves the same dependency graph.
 4. Run domain tests, full React typecheck, ESLint, Vitest, production build and browser accessibility checks; investigate failures before merging.
 5. Open a source import PR and merge only after required checks pass. Keep the existing `lunarlauren/YumPlan` repository and live Cloudflare deployment unchanged.
 
