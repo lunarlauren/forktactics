@@ -17,7 +17,7 @@
 
 - Presentation/export basket validation now rejects noncanonical ingredient IDs and more than 10,000 basket lines, matching the catalog constraints.
 - A source-free `package.json` and branch-scoped `.github/workflows/lockfile.yml` were added to this preparation PR.
-- **Lockfile bootstrapped on GitHub:** GitHub Actions bot committed `package-lock.json` as `8a908311b878d580e69932b6e0c34039e6f20fab` after its workflow's dependency resolution and locked-install steps. The lockfile is on the preparation branch, not in the local Pass 52 source archive.
+- **Lockfile bootstrapped on GitHub:** GitHub Actions bot committed `package-lock.json` as `8a908311b878d580e69932b6e0c34039e6f20fab` after its workflow's dependency resolution and locked-install steps. GitHub Actions verification run 40745896036 independently confirmed the lockfile requirement and **npm ci succeeded**, but the domain test step failed because the source is withheld; later React gates were skipped. The lockfile is on the preparation branch, not in the local Pass 52 source archive.
 - **Full application CI is not green:** application source is deliberately withheld from this public repository. The existing CI job cannot compile/test/build the app until source is privately imported. Do not merge this draft PR as production-ready.
 
 ## Safe import plan
