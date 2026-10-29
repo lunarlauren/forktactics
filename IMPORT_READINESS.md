@@ -1,18 +1,17 @@
 # Private import readiness — Forktactics
 
-**Verified 2026-10-28:** The connected `lunarlauren/forktactics` repository still reports **public** visibility. Do not upload application source until the repository is **private** and visibility is independently rechecked. The original `lunarlauren/YumPlan` repository and Cloudflare deployment must not be modified.
+**Verified 2026-10-29:** The connected `lunarlauren/forktactics` repository still reports **public** visibility. Do not upload application source until the repository is **private** and visibility is independently rechecked. The original `lunarlauren/YumPlan` repository and Cloudflare deployment must not be modified.
 
-## Latest locally verified source — Pass 56
+## Latest locally verified source — Pass 57
 
-- Archive: `forktactics-pass-056.zip`; SHA-256: `c9d810ac2374c0d9a3de47ee7131dd6e9e951318ee820ab1c3cdcf555b4cec7c`
-- Git bundle: `forktactics-pass-056.git.bundle`; SHA-256: `239f6ab58ab09516dbcf11c23100a6f2eab6a41bbf39e333e271ff7e83d674f4`
-- Incremental patch from Pass 55: `forktactics-pass-056.patch`; SHA-256: `c226288fa97c36b6029c6c375e8e2c06580b9b1550d5dee7bdc113124a12d83b`
-- Local feature branch: `fix/reject-noncanonical-import-ids`; commit `1bec392`.
-- Domain tests: **141/141 passed** on working tree, fresh extracted archive and independently patched Pass 55 clone. Strict domain TypeScript compilation included.
-- Regression **failed before the fix**. Catalog imports and backup restores now reject padded durable recipe/product/ingredient IDs rather than silently renaming them. Display labels still trim; valid delimiter-containing IDs still work.
-- Valid-catalog parity: **300/300 matched Pass 55**.
+- Archive: `forktactics-pass-057.zip`; SHA-256: `cbd80eae3b696dcdadfe64a73c2b7c3bcf39d7fca19168d60e6c4b0616dab0ec`
+- Git bundle: `forktactics-pass-057.git.bundle`; SHA-256: `d67a7576ad2af07fb54005c00f79634f572e06c5f4b6f4f697ff2439ee33fde9`
+- Incremental patch from Pass 56: `forktactics-pass-057.patch`; SHA-256: `c2e8690bfcd39c1569d8783c0fccaac1527a92ae0ca57d237337ebc0d5c9cd26`
+- Local feature branch: `fix/safe-proposal-swaps`; commit `fc37f5a`.
+- Domain tests: **142/142 passed** on working tree, fresh extracted archive and independently patched Pass 56 clone. Strict domain TypeScript compilation included.
+- Regression **failed before the fix**. A valid but extremely expensive personal recipe could be swapped into a proposed week, triggering grocery quote overflow during React rendering. Swaps now preflight the full quote, reject unrepresentable prices with a clear error, and leave the existing proposal intact. Normal over-budget swaps still allow review.
 - TypeScript/TSX syntax: **48 files, zero parse errors**.
-- Full React typecheck and build were attempted but **blocked** by missing local Vite type definitions (`TS2688`). Vitest, ESLint, browser tests and production build remain **NOT verified**.
+- Full React typecheck was attempted but **blocked** by missing local Vite type definitions (`TS2688`). Vitest, ESLint, browser tests and production build remain **NOT verified**.
 
 ## Source-free CI preparation on GitHub
 
@@ -22,7 +21,7 @@
 ## Safe import checklist
 
 1. Change repository visibility in GitHub Settings → General → Danger Zone → Change repository visibility; verify the GitHub API reports `private`.
-2. Import the verified Pass 56 source onto a **new feature branch**, never directly onto `main`. Exclude local Git metadata and build artifacts.
+2. Import the verified Pass 57 source onto a **new feature branch**, never directly onto `main`. Exclude local Git metadata and build artifacts.
 3. Incorporate the preparation branch's generated `package-lock.json` and confirm `npm ci` uses the locked graph.
 4. Run domain tests, full React typecheck, ESLint, Vitest, production build and browser/accessibility checks; investigate all failures.
 5. Open a source-import PR, review changes, and merge only after required checks pass. Do not deploy to the original YumPlan Cloudflare site.
