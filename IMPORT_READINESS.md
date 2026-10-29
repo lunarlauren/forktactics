@@ -2,16 +2,16 @@
 
 **Verified 2026-10-29:** The connected `lunarlauren/forktactics` repository still reports **public** visibility. Do not upload application source until the repository is **private** and visibility is independently rechecked. The original `lunarlauren/YumPlan` repository and Cloudflare deployment must not be modified.
 
-## Latest locally verified source — Pass 59
+## Latest locally verified source — Pass 60
 
-- Archive: `forktactics-pass-059.zip`; SHA-256: `52804dbbf3bb62b78dd502c8b3400f5e5b8c2d76372d2d13219450feaff513e2`
-- Git bundle: `forktactics-pass-059.git.bundle`; SHA-256: `9d17cde8bec5d3b2120b7bda774e48503369d90aa82ac7efc27d5f90a66ba041`
-- Incremental patch from Pass 58: `forktactics-pass-059.patch`; SHA-256: `c5346d642ba36df7e5811acabfec9e01149a3f3a4e5606dd23a7334aa65b3285`
-- Local feature branch: `fix/safe-planner-regression`; commit `134a288`.
-- Domain tests: **145/145 passed** on working tree, fresh extracted archive, and independently patched Pass 58 checkout. Strict domain TypeScript compilation included.
-- Regression coverage: cooked dinners now serialize in available-card order regardless of toggle order; week cards reject padded/overlong IDs, non-array input, and nonboolean cooked updates. Both new Node tests failed before the fix and passed afterward. Matching Vitest tests added but **not executed**.
-- TypeScript/TSX syntax: **48 files, zero parse errors**.
-- Full React typecheck attempted but **blocked** by missing local Vite type definitions (`TS2688`). The source archive lacks the existing GitHub-generated lockfile, so local `npm ci` remains unavailable. Vitest, ESLint, browser tests and production build are **NOT verified**.
+- Archive: `forktactics-pass-060.zip`; SHA-256: `2a5c03fe812ce767a4854edef1ce6b36159e80aa95da87b35d83d182bd1926d0`
+- Git bundle: `forktactics-pass-060.git.bundle`; SHA-256: `ace349ebc81e48ce38ba3ed1e74a4df1d536f26afcc4f95257621bf39945b06a`
+- Incremental patch from Pass 59: `forktactics-pass-060.patch`; SHA-256: `c84f90437b10826d99acef560434ceec144300e44d52ceaefe3c59ddbbe279ac`
+- Local feature branch: `fix/planner-tiny-package-overflow`; commit `f5753a5`.
+- Domain tests: **146/146 passed** on working tree, fresh extracted archive, and independently patched Pass 59 checkout. Strict domain TypeScript compilation included.
+- Regression coverage: the planner now skips otherwise valid recipes whose tiny grocery package size makes package-count division overflow, preserving affordable alternatives and deterministic recipe ordering. The new Node regression failed before the fix and passed afterward. Matching Vitest test added but **not executed**.
+- TypeScript/TSX syntax: **49 files, zero parse errors**.
+- Full React typecheck, Vitest, ESLint, browser tests and production build are **NOT verified**: the local archive lacks installed dependencies and the GitHub-generated lockfile. A previous typecheck attempt failed due to missing local Vite type definitions (`TS2688`).
 
 ## Source-free CI preparation on GitHub
 
@@ -21,7 +21,7 @@
 ## Safe import checklist
 
 1. Change repository visibility in GitHub Settings → General → Danger Zone → Change repository visibility; verify the GitHub API reports `private`.
-2. Import the verified Pass 59 source onto a **new feature branch**, never directly onto `main`. Exclude local Git metadata and build artifacts.
+2. Import the verified Pass 60 source onto a **new feature branch**, never directly onto `main`. Exclude local Git metadata and build artifacts.
 3. Incorporate the preparation branch's generated `package-lock.json` and confirm `npm ci` uses the locked graph.
 4. Run domain tests, full React typecheck, ESLint, Vitest, production build and browser/accessibility checks; investigate all failures.
 5. Open a source-import PR, review changes, and merge only after required checks pass. Do not deploy to the original YumPlan Cloudflare site.
