@@ -1,16 +1,16 @@
 # Private import readiness — Forktactics
 
-**Verified 2026-10-30 (Pass 73):** Connected `lunarlauren/forktactics` is still **public**. **Do not upload application source** until visibility is private and independently rechecked. Never modify `lunarlauren/YumPlan` or its Cloudflare deployment.
+**Verified 2026-10-30 (Pass 74):** Connected `lunarlauren/forktactics` is still **public**. **Do not upload application source** until visibility is private and independently rechecked. Never modify `lunarlauren/YumPlan` or its Cloudflare deployment.
 
-## Latest locally verified source — Pass 73
+## Latest locally verified source — Pass 74
 
-- Local branch: `fix/aggregate-grocery-package-overflow`; commit `b2eeb6600b969ab32e2af075b0205c1a61b281dc`.
-- ZIP: `forktactics-pass-073.zip`; SHA-256 `f028d7138e4664f2a05be646a8b171963e214ff672ed24808c659e3cf8a860a4`.
-- Patch from Pass 72: `forktactics-pass-073.patch`; SHA-256 `7da035b29ee4c1f4f827fc46c638cfe6c03f2fded31d8aca391f1f3e11f1669f`.
-- Complete Git bundle: `forktactics-pass-073.git.bundle`; SHA-256 `bf0a8687ddf9c91f9c6d6b22ef731647e300a92671cad0faa927c70499372e29`.
-- Fixed a crash path where individually safe but collectively unrepresentable package counts passed a zero-cost quote and later failed in the grocery board. Pricing and independent basket validation now reject aggregate package-count overflow; pantry edits and backup restores fail safely. Corrected two existing strict TypeScript test issues.
-- **167/167** Node domain tests passed on the working tree, freshly extracted ZIP, independently patched Pass 72 source, and clean Git bundle clone. Two new regressions failed before the fix (**165 passed, 2 failed**). Strict production-domain TypeScript passed. Domain test TypeScript passed a supplementary check using a **temporary Vitest API shim**, not the actual Vitest types. 50 TS/TSX files parsed without syntax errors.
-- Matching Vitest regressions were added but **not executed**. Full React typecheck and production build attempted but blocked by missing `vite/client`. ESLint and Vitest executables unavailable; `npm ping` failed with `EAI_AGAIN`. Browser/accessibility checks remain **unverified**.
+- Local branch: `fix/stale-tab-backup-recovery`; commit `f9dd64868c53f7c593a7741bac18b8fcff28f1e4`.
+- ZIP: `forktactics-pass-074.zip`; SHA-256 `722b91f1b3ef46d890ef8e5ea68dd70ef731c18e840fba584d8083b329f3aab2`.
+- Patch from Pass 73: `forktactics-pass-074.patch`; SHA-256 `7add0ac91da671d9e4a7799b967e6dc0ea5b6f136565fa28dd3037dd5892fb66`.
+- Complete Git bundle: `forktactics-pass-074.git.bundle`; SHA-256 `4a4f3e7f0d79481848d8f8d513ca065212f3009b72c7904b5f9b49b05d08582b`.
+- Fixed inconsistent backup recovery controls: the Settings backup button was disabled in stale tabs even though the warning banner still offered export. Current in-memory backups are now available regardless of browser write access; an initially unreadable save's exact original bytes are snapshotted and downloadable without silently exporting the untouched fallback as a backup.
+- **168/168** Node domain tests passed on the working tree, freshly extracted ZIP, independently patched Pass 73 source, and clean Git bundle clone. Strict production-domain TypeScript passed. Supplementary strict domain/test-file TypeScript passed with a **temporary Vitest API shim** (not actual Vitest). 52 TS/TSX files parsed without syntax errors. Git diff whitespace and bundle integrity checks passed.
+- Matching Vitest tests added but **not executed**. Full React typecheck and build attempted but blocked by missing `vite/client`. ESLint and Vitest executables unavailable; `npm ping` failed with `EAI_AGAIN`. Browser/accessibility checks remain **unverified**.
 
 ## Source-free CI preparation on GitHub
 
@@ -19,7 +19,7 @@ The preparation branch contains the package manifest, lockfile generation workfl
 ## Safe import checklist
 
 1. Change repository visibility to **private** in GitHub Settings → General → Danger Zone → Change repository visibility; independently verify via GitHub API.
-2. Import Pass 73 source onto a **new feature branch**, not `main`; exclude Git metadata, build artifacts, and secrets.
+2. Import Pass 74 source onto a **new feature branch**, not `main`; exclude Git metadata, build artifacts, and secrets.
 3. Incorporate the preparation branch's `package-lock.json` and verify `npm ci`.
 4. Run domain tests, full React typecheck, ESLint, Vitest, production build, and browser/accessibility checks. Fix all failures.
 5. Open a source-import PR; merge only after required checks pass. Never deploy to the original YumPlan Cloudflare site.
