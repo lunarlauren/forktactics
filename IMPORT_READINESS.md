@@ -1,16 +1,16 @@
 # Private import readiness — Forktactics
 
-**Verified 2026-10-30 (Pass 75):** Connected `lunarlauren/forktactics` is still **public**. **Do not upload application source** until visibility is private and independently rechecked. Never modify `lunarlauren/YumPlan` or its Cloudflare deployment.
+**Verified 2026-10-31 (Pass 76):** Connected `lunarlauren/forktactics` remains **public**. **Do not upload application source** until visibility is private and independently rechecked. Never modify `lunarlauren/YumPlan` or its live Cloudflare deployment.
 
-## Latest locally verified source — Pass 75
+## Latest locally verified source — Pass 76
 
-- Local branch: `fix/guard-reset-against-stale-tabs`; commit `9e8d907eb3414d9087e09bff936e06ef2da3ff2c`.
-- ZIP: `forktactics-pass-075.zip`; SHA-256 `660c91ef03c17879a624bcc59e3cf2fb9d788c544decf9936df3a4411a1102cf`.
-- Patch from Pass 74: `forktactics-pass-075.patch`; SHA-256 `9e0db60a4a87d712c9dee50b9c941ff2034f5a402cae7d91b8c73e5899e4cf35`.
-- Complete Git bundle: `forktactics-pass-075.git.bundle`; SHA-256 `157b168c170a341a3f559f312c5b08cd48ad049e833822d3b14cf55157cf4029`.
-- Fixed a destructive stale-tab reset: the old Reset button called unconditional `saveState`, which could overwrite another tab's newer week. Reset now uses the exact saved-revision guard; on conflict it preserves in-memory data and offers backup recovery. A confirmed reset of unchanged unreadable data remains possible.
-- **170/170** Node domain tests passed on the working tree, freshly extracted ZIP, independently patched Pass 74 source, and clean Git bundle clone. Strict production-domain TypeScript passed. Supplementary strict domain/test-file TypeScript passed with a **temporary Vitest API shim** (not actual Vitest). 52 TS/TSX files parsed without syntax errors. Git diff whitespace, ZIP integrity and bundle integrity checks passed.
-- Matching Vitest tests added but **not executed**. Full React typecheck and build attempted but blocked by missing `vite/client`. ESLint and Vitest executables unavailable; npm registry lookup failed with `EAI_AGAIN`. Browser/accessibility checks remain **unverified**.
+- Local feature branch: `feat/local-data-capacity-meter`; commit `928de5a2e296e2cb721b8c2bb74f58adccadeadf`.
+- ZIP: `forktactics-pass-076.zip`; SHA-256 `c37474aa1fd97b131c33c45ada969bb2c40313e3780aad1d379b4f71f7c316a4`.
+- Patch from Pass 75: `forktactics-pass-076.patch`; SHA-256 `ce8d7b290802db825dc22947604936a3a52366fd7b5e1607f48a229225df845d`.
+- Complete Git bundle: `forktactics-pass-076.git.bundle`; SHA-256 `1e6771f9a0fd6beadc0ea811fb7d03f019ee977727dc6abc5a659be39f0ead26`.
+- Settings now shows the current versioned JSON backup size in **UTF-8 bytes** against the 500 KB safety cap and warns at 80%. This is not browser quota or proof of persistence. New week and reset actions also reset the ephemeral Discover Skip cursor.
+- **171/171 Node domain tests passed** on the working tree, freshly extracted ZIP, independently patched Pass 75 source, and clean Git bundle clone. Strict production-domain TypeScript passed. New Vitest test-file TypeScript passed with a temporary API shim (**not actual Vitest**). **53 TS/TSX files parsed** with zero syntax errors. Git diff, ZIP, and bundle integrity checks passed.
+- Matching Vitest tests added **but not run**. Full React typecheck and build attempted but blocked by missing `vite/client`; ESLint and Vitest executables missing. npm registry DNS failed with `EAI_AGAIN`. Browser/accessibility checks remain **unverified**.
 
 ## Source-free CI preparation on GitHub
 
@@ -19,7 +19,7 @@ The preparation branch contains the package manifest, lockfile generation workfl
 ## Safe import checklist
 
 1. Change repository visibility to **private** in GitHub Settings → General → Danger Zone → Change repository visibility; independently verify via GitHub API.
-2. Import Pass 75 source onto a **new feature branch**, not `main`; exclude Git metadata, build artifacts, and secrets.
+2. Import Pass 76 source onto a **new feature branch**, not `main`; exclude Git metadata, build artifacts, and secrets.
 3. Incorporate the preparation branch's `package-lock.json` and verify `npm ci`.
 4. Run domain tests, full React typecheck, ESLint, Vitest, production build, and browser/accessibility checks. Fix all failures.
 5. Open a source-import PR; merge only after required checks pass. Never deploy to the original YumPlan Cloudflare site.
