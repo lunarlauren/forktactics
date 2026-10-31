@@ -1,0 +1,41 @@
+name: Generate Forktactics dependency lockfile
+
+# Bootstrap dependency reproducibility without publishing application source.
+# This runs only on the import-preparation branch, never on main.
+on:
+  push:
+    branches: [chore/prepare-private-import]
+    paths:
+      - package.json
+      - .github/workflows/lockfile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    if: github.repository == 'lunarlauren/forktactics' && github.ref == 'refs/heads/chore/prepare-private-import'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out preparation branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Resolve lockfile without executing package scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Verify locked dependencies install
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Commit lockfile to preparation branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "build: lock Forktactics dependencies"
+            git push origin HEAD:chore/prepare-private-import
+          fi
