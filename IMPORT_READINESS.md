@@ -1,16 +1,16 @@
 # Private import readiness — Forktactics
 
-**Verified 2026-10-31 (Pass 77):** Connected `lunarlauren/forktactics` remains **public**. **Do not upload application source** until visibility is private and independently rechecked. Never modify `lunarlauren/YumPlan` or its live Cloudflare deployment.
+**Verified 2026-10-31 (Pass 78):** Connected `lunarlauren/forktactics` remains **public**. **Do not upload application source** until visibility is private and independently rechecked. Never modify `lunarlauren/YumPlan` or its live Cloudflare deployment.
 
-## Latest locally verified source — Pass 77
+## Latest locally verified source — Pass 78
 
-- Local feature branch: `fix/exact-large-currency-display`; commit `ad043c305d6532e5c56723f49d4876ddb26c5e17`.
-- ZIP: `forktactics-pass-077.zip`; SHA-256 `073c5fda5890eba6864031184e28b426db5ce3cd446b07c689486d630f8cb9e6`.
-- Patch from Pass 76: `forktactics-pass-077.patch`; SHA-256 `923d988be39cefa57b9aa327000c84f37cb990f04daf10895636562d089bc434`.
-- Complete Git bundle: `forktactics-pass-077.git.bundle`; SHA-256 `9ad596e9d721182a320d18f30b9c64a477eab2d0b4dd4a79119820b26b8bc28b`.
-- Shared integer-cents UI formatter now preserves exact cents even for large valid whole-package grocery totals; the previous floating-dollar formatting lost pennies at high amounts. Both app-wide and grocery-board price labels use the pure helper. Existing CSV export was already exact and remains unchanged.
-- **172/172 Node domain tests passed** on working tree, freshly extracted ZIP, independently patched Pass 76 source, and clean Git bundle clone. New regression **failed before the fix** (`.90` displayed instead of `.91`). Strict production-domain TypeScript passed. New test-file TypeScript passed with a temporary Vitest API shim (**not actual Vitest**). **55 TS/TSX files** parsed with zero syntax errors. Patched and bundled Git trees match the source tree; Git diff, ZIP, and bundle integrity checks passed.
-- Matching Vitest tests added **but not run**. Full React typecheck and build attempted but blocked by missing `vite/client`; ESLint and Vitest executables missing. `npm ci` cannot run from the local archive because the lockfile is on GitHub's preparation branch; npm registry DNS ping also failed with `EAI_AGAIN`. Browser/accessibility checks remain **unverified**.
+- Local feature branch: `fix/strict-price-input`; commit `6275e1924a1d81b1ed60f828f353074dfb167377`.
+- ZIP: `forktactics-pass-078.zip`; SHA-256 `72a0beadcc0df1ad8cdbfc1bda91ec93969362dbe27d9e35e1004e4fa3aebbd5`.
+- Patch from Pass 77: `forktactics-pass-078.patch`; SHA-256 `d6bcb9dc71e30b20aad22d26054cf4b6d28dbe55e770d0bfa7d0c7fbc5b37be1`.
+- Complete Git bundle: `forktactics-pass-078.git.bundle`; SHA-256 `1362770a8caf5558b6939c87d68c31dfa4f488c272879366aadf310228348430`.
+- Both personal-ingredient and starter-package editors now parse USD text as **exact integer cents**, rejecting sub-cent prices instead of silently rounding them. Editable price formatting also preserves every penny in large safe values.
+- **173/173 Node domain tests passed** on working tree, freshly extracted ZIP, independently patched Pass 77 source, and clean Git bundle clone. The old code was reproduced accepting `0.00000001` dollars as 0 cents and `1.0000001` dollars as 100 cents. Strict production-domain TypeScript passed. Currency Vitest test TypeScript passed with a temporary shim (**not actual Vitest**). **56 TS/TSX files** parsed with zero syntax errors. Patched and bundled source trees match, Git diff whitespace check, ZIP and bundle integrity passed.
+- Matching Vitest cases added **but not run**. Full React typecheck and build attempted but blocked by missing `vite/client`; ESLint and Vitest executables missing. Local npm registry ping failed with `EAI_AGAIN`; the local source archive lacks the lockfile held on this preparation branch. Browser/accessibility checks remain **unverified**.
 
 ## Source-free CI preparation on GitHub
 
@@ -19,7 +19,7 @@ The preparation branch contains the package manifest, lockfile generation workfl
 ## Safe import checklist
 
 1. Change repository visibility to **private** in GitHub Settings → General → Danger Zone → Change repository visibility; independently verify via GitHub API.
-2. Import Pass 77 source onto a **new feature branch**, not `main`; exclude Git metadata, build artifacts, and secrets.
+2. Import Pass 78 source onto a **new feature branch**, not `main`; exclude Git metadata, build artifacts, and secrets.
 3. Incorporate the preparation branch's `package-lock.json` and verify `npm ci`.
 4. Run domain tests, full React typecheck, ESLint, Vitest, production build, and browser/accessibility checks. Fix all failures.
 5. Open a source-import PR; merge only after required checks pass. Never deploy to the original YumPlan Cloudflare site.
