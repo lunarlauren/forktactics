@@ -1,0 +1,10 @@
+export type Recipe = {id:string;name:string;minutes:number;servings:number;ingredients:string[];steps:string[];category:string};
+export const recipes:Recipe[]=[
+{id:"tomato-pasta",name:"Slow Sunday Tomato Pasta",minutes:25,servings:4,category:"Comfort",ingredients:["Pasta","Canned tomatoes","Garlic","Olive oil","Basil"],steps:["Boil salted water and cook pasta.","Warm olive oil and garlic, then add tomatoes.","Simmer sauce for 15 minutes.","Toss pasta with sauce and finish with basil."]},
+{id:"ginger-rice",name:"Ginger Vegetable Rice",minutes:30,servings:3,category:"Weeknight",ingredients:["Rice","Ginger","Carrots","Peas","Soy sauce"],steps:["Cook rice.","Sauté grated ginger and vegetables.","Add rice and soy sauce.","Stir until hot and serve."]},
+{id:"crispy-potatoes",name:"Crispy Potato Bowls",minutes:35,servings:2,category:"Budget",ingredients:["Potatoes","Chickpeas","Lemon","Yogurt","Paprika"],steps:["Cut and season potatoes.","Roast until golden.","Warm chickpeas.","Serve with lemon yogurt."]},
+{id:"black-bean-tacos",name:"Black Bean Tacos",minutes:20,servings:4,category:"Weeknight",ingredients:["Tortillas","Black beans","Lime","Cabbage","Cumin"],steps:["Warm beans with cumin.","Slice cabbage.","Warm tortillas.","Assemble and finish with lime."]},
+{id:"lemon-chickpeas",name:"Lemony Chickpea Skillet",minutes:20,servings:3,category:"Budget",ingredients:["Chickpeas","Lemon","Spinach","Garlic","Bread"],steps:["Warm garlic in oil.","Add chickpeas and spinach.","Season with lemon.","Serve with bread."]},
+{id:"roasted-veg",name:"Roasted Vegetable Tray",minutes:40,servings:4,category:"Comfort",ingredients:["Sweet potatoes","Broccoli","Red onion","Olive oil","Feta"],steps:["Heat oven to 425°F.","Cut and season vegetables.","Roast until tender.","Top with feta."]},
+{id:"herby-noodles",name:"Herby Butter Noodles",minutes:15,servings:2,category:"Quick",ingredients:["Noodles","Butter","Parsley","Lemon","Parmesan"],steps:["Cook noodles.","Melt butter.","Toss noodles with butter and herbs.","Finish with lemon and parmesan."]}
+];
