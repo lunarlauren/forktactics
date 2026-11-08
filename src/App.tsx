@@ -1,3 +1,4 @@
+import {priceGroceryBasket} from "./planning-adapter";
 import Onboarding,{type Setup} from "./Onboarding";
 import React,{useEffect,useMemo,useState} from "react";
 import {ChefHat,CalendarDays,ShoppingBasket,BookOpen,Settings2,Plus,Check,Lock,Unlock,Shuffle,ChevronRight,ArrowLeft,RotateCcw,Download,Upload,Search,Sparkles,Leaf,Wallet,Info,X,Minus,Heart,Clock,Users,CheckCircle2} from "lucide-react";
@@ -20,7 +21,8 @@ function App(){const [state,setState]=useState<State>(load);const [tab,setTab]=u
 useEffect(()=>{localStorage.setItem("forktactics-v1",JSON.stringify(state))},[state]);useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(""),3500);return()=>clearTimeout(t)},[toast]);
 const current=recipes.find(r=>r.id===state.plan[day]);const recipe=recipes.find(r=>r.id===selected);
 const sheet=state.priceSheets?.[state.activePriceSheet||"Sample prices"]||{};
-const basket=useMemo(()=>{const m=new Map<string,Ingredient>();state.plan.forEach(id=>{const r=recipes.find(x=>x.id===id);r?.ingredients.forEach(i=>{const k=i.name+"|"+i.unit;const old=m.get(k);m.set(k,{...i,qty:(old?.qty||0)+i.qty})})});return Array.from(m.values()).map(i=>({...i,packs:Math.ceil(i.qty/i.pack),cost:(Object.prototype.hasOwnProperty.call(sheet,i.name)?sheet[i.name]:i.price)===null?null:Math.ceil(i.qty/i.pack)*Number(Object.prototype.hasOwnProperty.call(sheet,i.name)?sheet[i.name]:i.price)}))},[state.plan,state.priceSheets,state.activePriceSheet]);
+const pricedBasket=useMemo(()=>priceGroceryBasket(state.plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),sheet),[state.plan,state.priceSheets,state.activePriceSheet]);
+const basket=pricedBasket.lines;
 const subtotal=basket.reduce((s,i)=>s+(state.pantry.includes(i.name)?0:i.cost||0),0);const unknown=basket.filter(i=>!state.pantry.includes(i.name)&&i.cost===null).length;const bought=basket.filter(i=>state.checked.includes(i.name)).length;const totalCooks=Object.values(state.cooks).reduce((a,b)=>a+b,0);
 function update(f:(s:State)=>State){setState(s=>f(s))}
 function restartOnboarding(){if(!window.confirm("Start fresh? This clears planned meals and Yum/Yuck ratings but keeps cooking history."))return;update(s=>({...s,plan:Array(7).fill(""),locked:Array(7).fill(false),checked:[],likes:[],dislikes:[],onboarded:false}));setDay(0);setSelected(null);setPicker(null);setShowSettings(false);setTab("Tonight")}
