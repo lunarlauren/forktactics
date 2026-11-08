@@ -1,7 +1,30 @@
-# Forktactics
+# ForkTactics
 
-Forktactics is a TypeScript/React meal planner with a card-deck-inspired interface.
+A new, public, design-led meal planning MVP built with React, TypeScript, Vite and Cloudflare Workers static assets.
 
-**Import pending.** The rebuild source is being verified before publication. The intended repository visibility is **private**; no application code should be uploaded while this repository is public.
+## Current prototype
+- Tonight's dinner, recipe details and Cooked It
+- Seven-day meal plan with locking and swapping
+- Consolidated package-aware shopping list and sample budget estimates
+- Private recipe collection, first-cook holographic gift and cooking milestones
+- Local-device persistence and JSON backup export
+- Responsive mobile and desktop layouts
 
-The legacy YumPlan repository and live Cloudflare deployment are separate and must not be modified as part of this import.
+**Important:** This is an early MVP, not a validated recipe or grocery pricing service. All recipe instructions and prices are illustrative. Pantry mode assumes a complete ingredient supply; inventory quantities and import recovery are not implemented. No accounts, purchases or ads are enabled.
+
+## Local development
+```sh
+npm install
+npm run dev
+```
+
+## Cloudflare Workers Builds
+Production branch: `main`  
+Root directory: `/`  
+Build command: `npm run build`  
+Deploy command: `npx wrangler deploy`
+
+`wrangler.jsonc` serves the `dist` directory as static assets. Build before deploying.
+
+## Product design
+The product direction is informed by the ForkTactics Product Design Document v2.4. This MVP does not claim completion of the document's research or safety gates. Existing YumPlan assets and deployments remain separate.
