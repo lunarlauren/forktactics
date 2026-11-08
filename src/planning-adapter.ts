@@ -14,7 +14,7 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
   const products:{id:string;packageQuantity:number;priceCents:number}[]=[];
   for(const [key,item] of merged){
     const price=Object.prototype.hasOwnProperty.call(overrides,item.name)?overrides[item.name]:item.price;
-    if(price!==null&&Number.isFinite(price)&&price>0&&item.pack>0){
+    if(price!==null&&Number.isFinite(price)&&price>=0&&item.pack>0){
       needs[key]=item.qty;
       products.push({id:key,packageQuantity:item.pack,priceCents:Math.round(price*100)});
     }
