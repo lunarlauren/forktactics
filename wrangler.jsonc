@@ -1,0 +1,9 @@
+{
+  "name": "forktactics-preview",
+  "compatibility_date": "2026-11-07",
+  "assets": {
+    "directory": "./",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "single-page-application"
+  }
+}
