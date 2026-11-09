@@ -40,7 +40,7 @@ function generatePlan(s:State):{next:State;result:"ok"|"over-budget"|"no-recipes
   const used=new Set(locked);
   const plan=[...s.plan];
   const slots=plan.map((_,i)=>i).filter(i=>!s.locked[i]);
-  const total=(chosen:Recipe[])=>priceGroceryBasket(chosen,priceSheet).knownTotal;
+  const total=(chosen:Recipe[])=>priceGroceryBasket(chosen,priceSheet,s.pantryQuantities||{}).knownTotal;
   if(total(lockedMeals)>limit)return {next:s,result:"over-budget"};
   let chosen=[...lockedMeals];
   let result:"ok"|"over-budget"|"unknown-prices"="ok";
@@ -56,7 +56,7 @@ function generatePlan(s:State):{next:State;result:"ok"|"over-budget"|"no-recipes
     if(affordable){plan[i]=affordable.id;chosen.push(affordable);used.add(affordable.id);}
     else{plan[i]="";result="over-budget";}
   }
-  const nextBasket=priceGroceryBasket(plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),priceSheet);
+  const nextBasket=priceGroceryBasket(plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),priceSheet,s.pantryQuantities||{});
   const remainingNames=new Set(nextBasket.lines.map(line=>line.name));
   if(result==="ok"&&nextBasket.unknownCount>0)result="unknown-prices";
   return {next:{...s,plan,checked:s.checked.filter(name=>remainingNames.has(name))},result};
