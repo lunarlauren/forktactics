@@ -10,7 +10,10 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     // Keep the quantity, but mark package pricing as uncertain instead of
     // crashing the entire shopping list or inventing a comparable price.
     const conflictingPack=Boolean(previous&&(previous.pack!==item.pack||previous.pack===0));
-    merged.set(key,{...item,pack:conflictingPack?0:previous?.pack??item.pack,qty:item.qty+(previous?.qty||0)});
+    // Conflicting shelf prices cannot safely be resolved by whichever recipe
+    // happens to appear last. A selected price-sheet override can still resolve it.
+    const conflictingPrice=Boolean(previous&&previous.price!==item.price);
+    merged.set(key,{...item,price:conflictingPrice?null:previous?.price??item.price,pack:conflictingPack?0:previous?.pack??item.pack,qty:item.qty+(previous?.qty||0)});
   }
   const lines=Array.from(merged,([key,item])=>{
     const price=Object.prototype.hasOwnProperty.call(overrides,item.name)?overrides[item.name]:item.price;
