@@ -15,7 +15,31 @@ const starterRecipes:Recipe[]=[
 const days=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 type State={useStarterRecipes?:boolean;customRecipes?:Recipe[];plan:string[];locked:boolean[];cooks:Record<string,number>;gift:string|null;pantry:string[];pantryQuantities?:Record<string,number>;purchasedQuantities?:Record<string,number>;checked:string[];budget:number;events:{id:string;recipe:string;at:string}[];onboarded?:boolean;likes?:string[];dislikes?:string[];household?:number;priceSheets?:Record<string,Record<string,number|null>>;activePriceSheet?:string;preferVariety?:boolean;prioritizeYum?:boolean};
 const initial:State={useStarterRecipes:false,customRecipes:[],plan:Array(7).fill(""),locked:Array(7).fill(false),cooks:{},gift:null,pantry:[],pantryQuantities:{},purchasedQuantities:{},checked:[],budget:75,events:[],onboarded:false,likes:[],dislikes:[],household:2,priceSheets:{},activePriceSheet:"Sample prices",preferVariety:true,prioritizeYum:true};
-function load():State{try{const saved=JSON.parse(localStorage.getItem("forktactics-v1")||"null");if(saved&&Array.isArray(saved.plan))return {...initial,...saved,useStarterRecipes:saved.useStarterRecipes??true,onboarded:saved.onboarded??true}}catch{}return initial}
+function load():State{try{
+ const saved:unknown=JSON.parse(localStorage.getItem("forktactics-v1")||"null");
+ if(!saved||typeof saved!=="object"||Array.isArray(saved))return initial;
+ const s=saved as Partial<State>;
+ const strings=(value:unknown):value is string[]=>Array.isArray(value)&&value.every(x=>typeof x==="string");
+ const quantities=(value:unknown):value is Record<string,number>=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value)&&Object.values(value).every(x=>typeof x==="number"&&Number.isFinite(x)&&x>=0);
+ const plan=strings(s.plan)&&s.plan.length===7?s.plan:initial.plan;
+ const locked=Array.isArray(s.locked)&&s.locked.length===7&&s.locked.every(x=>typeof x==="boolean")?s.locked:initial.locked;
+ const customRecipes=Array.isArray(s.customRecipes)?s.customRecipes.filter(r=>r&&typeof r.id==="string"&&r.id.startsWith("custom-")&&typeof r.name==="string"&&Number.isFinite(r.servings)&&r.servings>0&&Array.isArray(r.ingredients)&&r.ingredients.every((i:Ingredient)=>i&&typeof i.name==="string"&&typeof i.unit==="string"&&Number.isFinite(i.qty)&&i.qty>0&&Number.isFinite(i.pack)&&i.pack>0&&(i.price===null||Number.isFinite(i.price)&&i.price>=0))&&Array.isArray(r.steps)&&r.steps.every((step:string)=>typeof step==="string")):[];
+ const priceSheets=s.priceSheets&&typeof s.priceSheets==="object"&&!Array.isArray(s.priceSheets)&&Object.values(s.priceSheets).every(sheet=>sheet&&typeof sheet==="object"&&!Array.isArray(sheet)&&Object.values(sheet).every(price=>price===null||typeof price==="number"&&Number.isFinite(price)&&price>=0))?s.priceSheets:{};
+ const cooks=s.cooks&&typeof s.cooks==="object"&&!Array.isArray(s.cooks)?Object.fromEntries(Object.entries(s.cooks).filter(([,count])=>typeof count==="number"&&Number.isFinite(count)&&count>=0)):{};
+ const events=Array.isArray(s.events)?s.events.filter(e=>e&&typeof e.id==="string"&&typeof e.recipe==="string"&&typeof e.at==="string"):[];
+ return {...initial,...s,plan,locked,customRecipes,priceSheets,cooks,events,
+  budget:typeof s.budget==="number"&&Number.isFinite(s.budget)&&s.budget>=0?s.budget:initial.budget,
+  household:typeof s.household==="number"&&Number.isInteger(s.household)&&s.household>=1&&s.household<=30?s.household:initial.household,
+  likes:strings(s.likes)?s.likes:[],dislikes:strings(s.dislikes)?s.dislikes:[],checked:strings(s.checked)?s.checked:[],
+  pantry:strings(s.pantry)?s.pantry:[],pantryQuantities:quantities(s.pantryQuantities)?s.pantryQuantities:{},
+  purchasedQuantities:quantities(s.purchasedQuantities)?s.purchasedQuantities:{},
+  activePriceSheet:typeof s.activePriceSheet==="string"?s.activePriceSheet:initial.activePriceSheet,
+  gift:typeof s.gift==="string"?s.gift:null,
+  useStarterRecipes:typeof s.useStarterRecipes==="boolean"?s.useStarterRecipes:true,
+  onboarded:typeof s.onboarded==="boolean"?s.onboarded:true,
+  preferVariety:typeof s.preferVariety==="boolean"?s.preferVariety:true,
+  prioritizeYum:typeof s.prioritizeYum==="boolean"?s.prioritizeYum:true};
+ }catch{return initial}}
 function scaleMeals(meals:Recipe[],household:number){return meals.map(recipe=>({...recipe,ingredients:recipe.ingredients.map(item=>({...item,qty:item.qty*Math.max(1,household)/Math.max(1,recipe.servings)}))}))}
 function money(n:number){return "$"+n.toFixed(2)}
 function App(){const [state,setState]=useState<State>(load);const recipes=useMemo(()=>[...(state.useStarterRecipes??false?starterRecipes:[]),...(state.customRecipes||[])],[state.useStarterRecipes,state.customRecipes]);const [tab,setTab]=useState("Tonight");const [selected,setSelected]=useState<string|null>(null);const [day,setDay]=useState(0);const [picker,setPicker]=useState<number|null>(null);const [showSettings,setShowSettings]=useState(false);const [toast,setToast]=useState("");const [search,setSearch]=useState("");const [filter,setFilter]=useState("All");const [showGift,setShowGift]=useState(false);const [redoPreferences,setRedoPreferences]=useState(false);const [editingRecipe,setEditingRecipe]=useState(false);const [editingRecipeId,setEditingRecipeId]=useState<string|null>(null);const [recipeTargetDay,setRecipeTargetDay]=useState<number|null>(null);const [draftName,setDraftName]=useState("");const [draftIngredients,setDraftIngredients]=useState([{name:"",qty:"",unit:"g",pack:"",price:""}]);const [draftSteps,setDraftSteps]=useState("");
