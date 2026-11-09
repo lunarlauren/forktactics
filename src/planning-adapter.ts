@@ -17,7 +17,9 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     const qty=Math.max(0,requiredQty-pantryQty);
     const packs=Math.ceil(qty/item.pack);
     const validPrice=price!==null&&typeof price==="number"&&Number.isFinite(price)&&price>=0;
-    return {...item,qty,requiredQty,pantryQty,price,packs,cost:validPrice?packs*Math.round(price*100)/100:null};
+    // No purchase is needed when verified pantry stock covers the requirement.
+    // An unknown shelf price must not make a zero-package grocery line unpriced.
+    return {...item,qty,requiredQty,pantryQty,price,packs,cost:packs===0?0:validPrice?packs*Math.round(price*100)/100:null};
   });
   const knownTotal=Math.round(lines.reduce((sum,line)=>sum+Math.round((line.cost??0)*100),0))/100;
   return {lines,knownTotal,unknownCount:lines.filter(x=>x.cost===null).length};
