@@ -17,3 +17,16 @@
   .mobile-nav { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
   .mobile-nav button { min-height: 48px; }
 }
+
+
+/* Recipe editor: keep every field inside the modal on narrow screens. */
+.recipe-editor-modal { box-sizing:border-box; max-width:calc(100vw - 32px); overflow-x:hidden; }
+.recipe-editor-modal form, .recipe-editor-modal form > label, .recipe-editor-modal .recipe-ingredient-fields,
+.recipe-editor-modal .recipe-ingredient-fields > label { min-width:0; max-width:100%; }
+.recipe-editor-modal input, .recipe-editor-modal textarea { box-sizing:border-box; width:100%; max-width:100%; min-width:0; }
+.recipe-editor-modal .recipe-ingredient-fields > button { min-width:0; max-width:100%; white-space:normal; }
+@media(max-width:480px) {
+  .overlay { padding:12px; }
+  .recipe-editor-modal { width:100%; max-width:100%; padding:22px 16px; max-height:calc(100dvh - 24px); }
+  .recipe-editor-modal .recipe-ingredient-fields { grid-template-columns:minmax(0,1fr)!important; }
+}
