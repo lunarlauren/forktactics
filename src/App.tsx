@@ -61,8 +61,14 @@ function generatePlan(s:State):{next:State;result:"ok"|"over-budget"|"no-recipes
       if(yum)return yum;
       const variety=s.preferVariety===false?0:Number(used.has(a.id))-Number(used.has(b.id));
       if(variety)return variety;
-      const incrementalA=total([...chosen,a])-total(chosen);
-      const incrementalB=total([...chosen,b])-total(chosen);
+      // When two equally preferred meals fit the known-price budget, prefer
+      // the one with fewer unpriced grocery items before comparing cost.
+      // A missing price is uncertainty, not a free ingredient.
+      const basketA=priceGroceryBasket([...chosen,a],priceSheet,s.pantryQuantities||{});
+      const basketB=priceGroceryBasket([...chosen,b],priceSheet,s.pantryQuantities||{});
+      if(basketA.unknownCount!==basketB.unknownCount)return basketA.unknownCount-basketB.unknownCount;
+      const incrementalA=basketA.knownTotal-total(chosen);
+      const incrementalB=basketB.knownTotal-total(chosen);
       return incrementalA-incrementalB||a.name.localeCompare(b.name);
     })[0];
     if(best){plan[i]=best.id;chosen.push(best);used.add(best.id);}
@@ -78,7 +84,7 @@ function shuffle(){
   // depends on a side effect inside a potentially deferred state updater.
   const {next,result}=generatePlan(state);
   setState(previous=>previous===state?next:generatePlan(previous).next);
-  setToast(result==="no-recipes"?"All recipes are marked Yuck. Change your preferences to plan.":result==="over-budget"?"Only dinners within the known-price budget were added. Missing prices may increase the total.":result==="unknown-prices"?"Dinners generated. Some prices are unknown, so the final total may exceed your budget.":"Your week was generated within the grocery budget.");
+  setToast(result==="no-recipes"?"All recipes are marked Yuck. Change your preferences to plan.":result==="over-budget"?"Only dinners within the known-price budget were added. Missing prices may increase the total.":result==="unknown-prices"?"Dinners generated. Some prices are unknown, so the final total may exceed your budget.":"Your week was generated within the known-price budget. Actual store prices may differ.");
 }
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({app:"ForkTactics",version:1,data:state},null,2)],{type:"application/json"}));a.download="forktactics-backup.json";a.click();URL.revokeObjectURL(a.href);setToast("Backup downloaded. Keep it somewhere safe.")}
 const card=(r:Recipe,action?:()=>void)=>{const n=state.cooks[r.id]||0;const holo=state.gift===r.id||n>=5;return <button key={r.id} className="recipe-card" onClick={action||(()=>setSelected(r.id))}><div className={`recipe-art ${r.colors} ${holo?"holo":""}`}><span className="art-spark">✦</span><span className="food-emoji" aria-hidden="true">{r.emoji}</span>{holo&&<span className="holo-tag">✦ HOLO</span>}</div><div className="recipe-card-body"><div className="eyebrow">{r.category}</div><strong>{r.name}</strong><div className="card-meta"><span><Clock size={13}/>{r.time} min</span><span><ChefHat size={13}/>{n} cooked</span></div></div></button>};
