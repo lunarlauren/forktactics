@@ -20,7 +20,7 @@ function load():State{try{
  if(!saved||typeof saved!=="object"||Array.isArray(saved))return initial;
  const s=saved as Partial<State>;
  const strings=(value:unknown):value is string[]=>Array.isArray(value)&&value.every(x=>typeof x==="string");
- const quantities=(value:unknown):value is Record<string,number>=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value)&&Object.values(value).every(x=>typeof x==="number"&&Number.isFinite(x)&&x>=0);
+ const quantities=(value:unknown):value is Record<string,number>=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value)&&Object.values(value as Record<string,unknown>).every(x=>typeof x==="number"&&Number.isFinite(x)&&x>=0);
  const plan=strings(s.plan)&&s.plan.length===7?s.plan:initial.plan;
  const locked=Array.isArray(s.locked)&&s.locked.length===7&&s.locked.every(x=>typeof x==="boolean")?s.locked:initial.locked;
  const customRecipes=Array.isArray(s.customRecipes)?s.customRecipes.filter(r=>r&&typeof r.id==="string"&&r.id.startsWith("custom-")&&typeof r.name==="string"&&Number.isFinite(r.servings)&&r.servings>0&&Array.isArray(r.ingredients)&&r.ingredients.every((i:Ingredient)=>i&&typeof i.name==="string"&&typeof i.unit==="string"&&Number.isFinite(i.qty)&&i.qty>0&&Number.isFinite(i.pack)&&i.pack>0&&(i.price===null||Number.isFinite(i.price)&&i.price>=0))&&Array.isArray(r.steps)&&r.steps.every((step:string)=>typeof step==="string")):[];
