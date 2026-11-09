@@ -27,7 +27,10 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     // Price-sheet keys ending in |pack are reserved for package quantities.
     const packOverride=overrides[key+"|pack"];
     const pack=typeof packOverride==="number"&&Number.isFinite(packOverride)&&packOverride>0?packOverride:item.pack;
-    // A recipe price is tied to its recipe package size. When recipe package\n    // sizes disagree, even an explicit pack-size override cannot establish a\n    // trustworthy price without an explicit price-sheet price.\n    const price=Object.prototype.hasOwnProperty.call(overrides,key)?overrides[key]:Object.prototype.hasOwnProperty.call(overrides,item.name)?overrides[item.name]:item.pack===0?null:item.price;
+    // A recipe price is tied to its recipe package size. When recipe package
+    // sizes disagree, even an explicit pack-size override cannot establish a
+    // trustworthy price without an explicit price-sheet price.
+    const price=Object.prototype.hasOwnProperty.call(overrides,key)?overrides[key]:Object.prototype.hasOwnProperty.call(overrides,item.name)?overrides[item.name]:item.pack===0?null:item.price;
     const recorded=pantryQuantities[item.name+"|"+item.unit];
     const pantryQty=typeof recorded==="number"&&Number.isFinite(recorded)&&recorded>0?Math.min(recorded,item.qty):0;
     const requiredQty=item.qty;
