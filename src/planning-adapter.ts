@@ -21,7 +21,9 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     merged.set(key,{...item,price:conflictingPrice?null:previous?previous.price:item.price,pack:conflictingPack?0:previous?.pack??item.pack,qty:item.qty+(previous?.qty||0)});
   }
   const lines=Array.from(merged,([key,item])=>{
-    const price=Object.prototype.hasOwnProperty.call(overrides,item.name)?overrides[item.name]:item.price;
+    // Unit-specific prices take precedence; legacy name-only price sheets remain valid.
+    // This prevents a per-package price for one unit from overriding another unit.
+    const price=Object.prototype.hasOwnProperty.call(overrides,key)?overrides[key]:Object.prototype.hasOwnProperty.call(overrides,item.name)?overrides[item.name]:item.price;
     const recorded=pantryQuantities[item.name+"|"+item.unit];
     const pantryQty=typeof recorded==="number"&&Number.isFinite(recorded)&&recorded>0?Math.min(recorded,item.qty):0;
     const requiredQty=item.qty;
