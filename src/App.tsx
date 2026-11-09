@@ -16,12 +16,13 @@ const days=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 type State={useStarterRecipes?:boolean;customRecipes?:Recipe[];plan:string[];locked:boolean[];cooks:Record<string,number>;gift:string|null;pantry:string[];pantryQuantities?:Record<string,number>;purchasedQuantities?:Record<string,number>;checked:string[];budget:number;events:{id:string;recipe:string;at:string}[];onboarded?:boolean;likes?:string[];dislikes?:string[];household?:number;priceSheets?:Record<string,Record<string,number|null>>;activePriceSheet?:string;preferVariety?:boolean;prioritizeYum?:boolean};
 const initial:State={useStarterRecipes:false,customRecipes:[],plan:Array(7).fill(""),locked:Array(7).fill(false),cooks:{},gift:null,pantry:[],pantryQuantities:{},purchasedQuantities:{},checked:[],budget:75,events:[],onboarded:false,likes:[],dislikes:[],household:2,priceSheets:{},activePriceSheet:"Sample prices",preferVariety:true,prioritizeYum:true};
 function load():State{try{const saved=JSON.parse(localStorage.getItem("forktactics-v1")||"null");if(saved&&Array.isArray(saved.plan))return {...initial,...saved,useStarterRecipes:saved.useStarterRecipes??true,onboarded:saved.onboarded??true}}catch{}return initial}
+function scaleMeals(meals:Recipe[],household:number){return meals.map(recipe=>({...recipe,ingredients:recipe.ingredients.map(item=>({...item,qty:item.qty*Math.max(1,household)/Math.max(1,recipe.servings)}))}))}
 function money(n:number){return "$"+n.toFixed(2)}
 function App(){const [state,setState]=useState<State>(load);const recipes=useMemo(()=>[...(state.useStarterRecipes??false?starterRecipes:[]),...(state.customRecipes||[])],[state.useStarterRecipes,state.customRecipes]);const [tab,setTab]=useState("Tonight");const [selected,setSelected]=useState<string|null>(null);const [day,setDay]=useState(0);const [picker,setPicker]=useState<number|null>(null);const [showSettings,setShowSettings]=useState(false);const [toast,setToast]=useState("");const [search,setSearch]=useState("");const [filter,setFilter]=useState("All");const [showGift,setShowGift]=useState(false);const [redoPreferences,setRedoPreferences]=useState(false);const [editingRecipe,setEditingRecipe]=useState(false);const [editingRecipeId,setEditingRecipeId]=useState<string|null>(null);const [draftName,setDraftName]=useState("");const [draftIngredients,setDraftIngredients]=useState([{name:"",qty:"",unit:"g",pack:"",price:""}]);const [draftSteps,setDraftSteps]=useState("");
 useEffect(()=>{localStorage.setItem("forktactics-v1",JSON.stringify(state))},[state]);useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(""),3500);return()=>clearTimeout(t)},[toast]);
 const current=recipes.find(r=>r.id===state.plan[day]);const recipe=recipes.find(r=>r.id===selected);
 const sheet=state.priceSheets?.[state.activePriceSheet||"Sample prices"]||{};
-const pricedBasket=useMemo(()=>priceGroceryBasket(state.plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),sheet,state.pantryQuantities||{}),[state.plan,recipes,state.priceSheets,state.activePriceSheet,state.pantryQuantities]);
+const pricedBasket=useMemo(()=>priceGroceryBasket(scaleMeals(state.plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),state.household||2),sheet,state.pantryQuantities||{}),[state.plan,recipes,state.priceSheets,state.activePriceSheet,state.pantryQuantities,state.household]);
 const basket=pricedBasket.lines;
 const subtotal=basket.reduce((sum,item)=>sum+(item.cost||0),0);const unknown=basket.filter(item=>item.cost===null).length;const purchasedFor=(i:typeof basket[number])=>{const n=state.purchasedQuantities?.[i.name+"|"+i.unit];return typeof n==="number"&&Number.isFinite(n)&&n>0?n:0};const completed=(i:typeof basket[number])=>i.qty===0||purchasedFor(i)>=i.qty||state.checked.includes(i.name);const bought=basket.filter(completed).length;const manuallyChecked=basket.filter(i=>state.checked.includes(i.name)&&i.qty>purchasedFor(i)&&i.qty>0).length;const totalCooks=Object.values(state.cooks).reduce((a,b)=>a+b,0);
 function update(f:(s:State)=>State){setState(s=>f(s))}
@@ -35,7 +36,7 @@ function restartOnboarding(){if(!window.confirm("Start with a blank kitchen? Thi
 function completeSetup(setup:Setup){update(s=>({...s,...(redoPreferences?{}:{plan:Array(7).fill(""),locked:Array(7).fill(false),checked:[]}),budget:setup.budget,household:setup.household,likes:setup.likes,dislikes:setup.dislikes,onboarded:true}));setRedoPreferences(false);setDay(0);setTab("Week");setToast(redoPreferences?"Preferences updated. Your existing meal plan and grocery checks are unchanged.":"You're set! Your week is empty until you choose dinners or shuffle unlocked slots.");}
 function cook(id:string){const chosen=recipes.find(r=>r.id===id);if(!chosen)return;if(!window.confirm(`Confirm you cooked ${chosen.name}? This records one cook and updates your collection.`))return;const event={id:crypto.randomUUID(),recipe:id,at:new Date().toISOString()};const first=state.events.length===0&&!state.gift;update(s=>({...s,cooks:{...s.cooks,[id]:(s.cooks[id]||0)+1},events:[...s.events,event],gift:s.gift||id}));setSelected(null);setToast("Dinner logged! Your collection is growing.");if(first)setShowGift(true)}
 function undo(){const last=state.events[state.events.length-1];if(!last)return;update(s=>({...s,events:s.events.slice(0,-1),cooks:{...s.cooks,[last.recipe]:Math.max(0,(s.cooks[last.recipe]||0)-1)}}));setToast("Last cook undone. Your first gift stays yours.")}
-function swap(index:number,id:string){if(state.locked[index]){setPicker(null);setToast("Unlock this day before changing its dinner.");return;}update(s=>{if(s.locked[index])return s;const nextPlan=s.plan.map((x,i)=>i===index?id:x);const remainingNames=new Set(priceGroceryBasket(nextPlan.map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{}).lines.map(line=>line.name));return {...s,plan:nextPlan,checked:s.checked.filter(name=>remainingNames.has(name))}});setPicker(null);setToast("Dinner swapped. Existing grocery checks were kept for ingredients still needed.")}
+function swap(index:number,id:string){if(state.locked[index]){setPicker(null);setToast("Unlock this day before changing its dinner.");return;}update(s=>{if(s.locked[index])return s;const nextPlan=s.plan.map((x,i)=>i===index?id:x);const remainingNames=new Set(priceGroceryBasket(scaleMeals(nextPlan.map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.household||2),s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{}).lines.map(line=>line.name));return {...s,plan:nextPlan,checked:s.checked.filter(name=>remainingNames.has(name))}});setPicker(null);setToast("Dinner swapped. Existing grocery checks were kept for ingredients still needed.")}
 function generatePlan(s:State):{next:State;result:"ok"|"over-budget"|"no-recipes"|"unknown-prices"}{
   const eligible=recipes.filter(r=>!(s.dislikes||[]).includes(r.id));
   if(!eligible.length)return {next:s,result:"no-recipes"};
@@ -46,7 +47,7 @@ function generatePlan(s:State):{next:State;result:"ok"|"over-budget"|"no-recipes
   const used=new Set(locked);
   const plan=[...s.plan];
   const slots=plan.map((_,i)=>i).filter(i=>!s.locked[i]);
-  const total=(chosen:Recipe[])=>priceGroceryBasket(chosen,priceSheet,s.pantryQuantities||{}).knownTotal;
+  const total=(chosen:Recipe[])=>priceGroceryBasket(scaleMeals(chosen,s.household||2),priceSheet,s.pantryQuantities||{}).knownTotal;
   if(total(lockedMeals)>limit)return {next:s,result:"over-budget"};
   let chosen=[...lockedMeals];
   let result:"ok"|"over-budget"|"unknown-prices"="ok";
@@ -70,8 +71,8 @@ function generatePlan(s:State):{next:State;result:"ok"|"over-budget"|"no-recipes
       // When two equally preferred meals fit the known-price budget, prefer
       // the one with fewer unpriced grocery items before comparing cost.
       // A missing price is uncertainty, not a free ingredient.
-      const basketA=priceGroceryBasket([...chosen,a],priceSheet,s.pantryQuantities||{});
-      const basketB=priceGroceryBasket([...chosen,b],priceSheet,s.pantryQuantities||{});
+      const basketA=priceGroceryBasket(scaleMeals([...chosen,a],s.household||2),priceSheet,s.pantryQuantities||{});
+      const basketB=priceGroceryBasket(scaleMeals([...chosen,b],s.household||2),priceSheet,s.pantryQuantities||{});
       if(basketA.unknownCount!==basketB.unknownCount)return basketA.unknownCount-basketB.unknownCount;
       const incrementalA=basketA.knownTotal-total(chosen);
       const incrementalB=basketB.knownTotal-total(chosen);
@@ -80,7 +81,7 @@ function generatePlan(s:State):{next:State;result:"ok"|"over-budget"|"no-recipes
     if(best){plan[i]=best.id;chosen.push(best);used.add(best.id);}
     else{plan[i]="";result="over-budget";}
   }
-  const nextBasket=priceGroceryBasket(plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),priceSheet,s.pantryQuantities||{});
+  const nextBasket=priceGroceryBasket(scaleMeals(plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),s.household||2),priceSheet,s.pantryQuantities||{});
   const remainingNames=new Set(nextBasket.lines.map(line=>line.name));
   if(result==="ok"&&nextBasket.unknownCount>0)result="unknown-prices";
   return {next:{...s,plan,checked:s.checked.filter(name=>remainingNames.has(name))},result};
