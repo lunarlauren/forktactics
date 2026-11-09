@@ -52,8 +52,20 @@ function generatePlan(s:State):{next:State;result:"ok"|"over-budget"|"no-recipes
       if(variety)return variety;
       return a.name.localeCompare(b.name);
     });
-    const affordable=candidates.find(r=>total([...chosen,r])<=limit);
-    if(affordable){plan[i]=affordable.id;chosen.push(affordable);used.add(affordable.id);}
+    // Prefer meals that reuse ingredients already needed this week when taste and
+    // variety are equal. This reduces extra grocery packages without changing
+    // hard budget eligibility or the user's Yum/Yuck preferences.
+    const affordable=candidates.filter(r=>total([...chosen,r])<=limit);
+    const best=affordable.sort((a,b)=>{
+      const yum=s.prioritizeYum===false?0:Number((s.likes||[]).includes(b.id))-Number((s.likes||[]).includes(a.id));
+      if(yum)return yum;
+      const variety=s.preferVariety===false?0:Number(used.has(a.id))-Number(used.has(b.id));
+      if(variety)return variety;
+      const incrementalA=total([...chosen,a])-total(chosen);
+      const incrementalB=total([...chosen,b])-total(chosen);
+      return incrementalA-incrementalB||a.name.localeCompare(b.name);
+    })[0];
+    if(best){plan[i]=best.id;chosen.push(best);used.add(best.id);}
     else{plan[i]="";result="over-budget";}
   }
   const nextBasket=priceGroceryBasket(plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),priceSheet,s.pantryQuantities||{});
