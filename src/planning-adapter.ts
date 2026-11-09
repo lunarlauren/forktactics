@@ -23,16 +23,20 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
   const lines=Array.from(merged,([key,item])=>{
     // Unit-specific prices take precedence; legacy name-only price sheets remain valid.
     // This prevents a per-package price for one unit from overriding another unit.
+    // An explicit unit-specific package-size override resolves conflicting recipe packs.
+    // Price-sheet keys ending in |pack are reserved for package quantities.
+    const packOverride=overrides[key+"|pack"];
+    const pack=typeof packOverride==="number"&&Number.isFinite(packOverride)&&packOverride>0?packOverride:item.pack;
     const price=Object.prototype.hasOwnProperty.call(overrides,key)?overrides[key]:Object.prototype.hasOwnProperty.call(overrides,item.name)?overrides[item.name]:item.price;
     const recorded=pantryQuantities[item.name+"|"+item.unit];
     const pantryQty=typeof recorded==="number"&&Number.isFinite(recorded)&&recorded>0?Math.min(recorded,item.qty):0;
     const requiredQty=item.qty;
     const qty=Math.max(0,requiredQty-pantryQty);
-    const packs=item.pack>0?Math.ceil(qty/item.pack):0;
+    const packs=pack>0?Math.ceil(qty/pack):0;
     const validPrice=price!==null&&typeof price==="number"&&Number.isFinite(price)&&price>=0;
     // No purchase is needed when verified pantry stock covers the requirement.
     // An unknown shelf price must not make a zero-package grocery line unpriced.
-    return {...item,qty,requiredQty,pantryQty,price,packs,cost:qty===0?0:item.pack===0?null:validPrice?packs*Math.round(price*100)/100:null};
+    return {...item,pack,qty,requiredQty,pantryQty,price,packs,cost:qty===0?0:pack===0?null:validPrice?packs*Math.round(price*100)/100:null};
   });
   const knownTotal=Math.round(lines.reduce((sum,line)=>sum+Math.round((line.cost??0)*100),0))/100;
   return {lines,knownTotal,unknownCount:lines.filter(x=>x.cost===null).length};
