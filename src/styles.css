@@ -69,3 +69,25 @@
   .pack-gallery { grid-template-columns:1fr; }
   .pack-gallery-card { min-height:0; }
 }
+
+
+/* TCG-inspired booster wrappers: decorative foil, not a gameplay rarity claim. */
+.pack-gallery { grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr)); gap:20px; align-items:stretch; }
+.pack-gallery-card { position:relative; isolation:isolate; overflow:hidden; min-height:350px; padding:14px; gap:10px; border:3px solid #bd9447; border-radius:13px; background:radial-gradient(ellipse at 50% 35%,#5c806b 0%,#214b3d 48%,#162e2c 100%); color:#fff7de; box-shadow:inset 0 0 0 2px #f6d88d,inset 0 0 0 6px #15392f,0 12px 26px #193c2630; transition:transform .18s ease,box-shadow .18s ease; }
+.pack-gallery-card::before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:repeating-linear-gradient(120deg,transparent 0 23px,#ffffff0b 24px 25px,transparent 26px 48px),linear-gradient(115deg,transparent 25%,#fff8c51c 43%,transparent 58%); }
+.pack-gallery-card:nth-child(4n+2) { background:radial-gradient(ellipse at 50% 35%,#9d6150 0%,#633b42 48%,#342b38 100%); }
+.pack-gallery-card:nth-child(4n+3) { background:radial-gradient(ellipse at 50% 35%,#82769c 0%,#483a60 48%,#28243c 100%); }
+.pack-gallery-card:nth-child(4n+4) { background:radial-gradient(ellipse at 50% 35%,#a18951 0%,#645332 48%,#35372c 100%); }
+.pack-gallery-card:hover { transform:translateY(-4px); box-shadow:inset 0 0 0 2px #f6d88d,inset 0 0 0 6px #15392f,0 18px 34px #193c2640; }
+.pack-gallery-topline { display:flex; justify-content:space-between; gap:8px; width:100%; font-size:8px; letter-spacing:.11em; font-weight:800; color:#f9e6af; }
+.pack-gallery-art { position:relative; display:grid; place-items:center; align-self:stretch; flex:1; min-height:125px; width:100%; }
+.pack-gallery-halo { position:absolute; width:125px; height:125px; border:2px solid #e7c57a99; border-radius:50%; box-shadow:0 0 0 9px #e7c57a15,0 0 0 21px #e7c57a10,inset 0 0 25px #e7c57a4d; }
+.pack-gallery-emoji { position:relative; font-size:72px; line-height:1; filter:drop-shadow(0 8px 9px #091c1d80); }
+.pack-gallery-sparkle { position:absolute; top:6px; right:15%; color:#ffe8a6; font-size:27px; }
+.pack-gallery-copy { width:100%; text-align:center; gap:6px; }
+.pack-gallery-copy strong { font-size:19px; letter-spacing:.015em; color:#fff5d5; text-shadow:0 2px 2px #0007; }
+.pack-gallery-copy small { color:#f0e4c8; }
+.pack-gallery-action { justify-content:center; width:100%; padding:10px 8px; border:1px solid #f3d28b; border-radius:7px; background:linear-gradient(#f6dfa3,#d2a958); color:#263b30; }
+@media(max-width:760px) { .pack-gallery { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .pack-gallery-card { min-height:280px; padding:10px; } .pack-gallery-art { min-height:90px; } .pack-gallery-halo { width:85px; height:85px; } .pack-gallery-emoji { font-size:52px; } .pack-gallery-copy strong { font-size:15px; } .pack-gallery-topline { font-size:6px; } .pack-gallery-action { font-size:11px; } }
+@media(max-width:360px) { .pack-gallery { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .pack-gallery-card { transition:none; } .pack-gallery-card:hover { transform:none; } }
