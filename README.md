@@ -24,7 +24,7 @@ Root directory: `/`
 Build command: `npm run build`  
 Deploy command: `npx wrangler deploy`
 
-`wrangler.jsonc` serves the `dist` directory as static assets. Build before deploying.
+`wrangler.jsonc` serves the `dist` directory as static assets. Build before deploying. Cloudflare Workers Builds handles production deployments from pushes to `main`; GitHub Actions runs verification only.
 
 ## Product design
 The product direction is informed by the ForkTactics Product Design Document v2.4. This MVP does not claim completion of the document's research or safety gates. Existing YumPlan assets and deployments remain separate.
