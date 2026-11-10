@@ -52,3 +52,23 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
   const knownTotal=Math.round(lines.reduce((sum,line)=>sum+Math.round((line.cost??0)*100),0))/100;
   return {lines,knownTotal,unknownCount:lines.filter(x=>x.cost===null).length};
 }
+
+/** Outstanding shopping cost after verified purchases, excluding manual checkmarks.
+ * Purchase quantities and pantry quantities are stored independently.
+ */
+export function outstandingGroceryEstimate(lines:GroceryLine[],purchasedQuantities:Record<string,number>={}){
+  let knownTotalCents=0;
+  let unknownCount=0;
+  for(const line of lines){
+    const recorded=purchasedQuantities[line.name+"|"+line.unit];
+    const purchased=typeof recorded==="number"&&Number.isFinite(recorded)&&recorded>0?recorded:0;
+    const remaining=Math.max(0,line.qty-purchased);
+    if(remaining===0)continue;
+    if(!Number.isFinite(line.pack)||line.pack<=0||line.price===null||!Number.isFinite(line.price)||line.price<0){
+      unknownCount++;
+      continue;
+    }
+    knownTotalCents+=Math.ceil(remaining/line.pack)*Math.round(line.price*100);
+  }
+  return {knownTotal:Math.round(knownTotalCents)/100,unknownCount};
+}
