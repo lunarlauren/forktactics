@@ -3,10 +3,12 @@ export type GroceryLine=GroceryInput&{packs:number;cost:number|null;requiredQty:
 export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],overrides:Record<string,number|null>={},pantryQuantities:Record<string,number>={}):{lines:GroceryLine[];knownTotal:number;unknownCount:number}{
   const merged=new Map<string,GroceryInput>();
   for(const meal of meals)for(const item of meal.ingredients){
-    if(!Number.isFinite(item.qty)||item.qty<0||!Number.isFinite(item.pack)||item.pack<=0)throw new Error("Invalid grocery quantity or package size for "+item.name);
-    // Optional zero-quantity ingredients are not shopping requirements. Including
-    // them can introduce false price conflicts or block strict-budget planning.
+    if(!Number.isFinite(item.qty)||item.qty<0)throw new Error("Invalid grocery quantity for "+item.name);
+    // Optional zero-quantity ingredients are not shopping requirements. Their
+    // package sizes may be blank/unknown and must not block an otherwise valid
+    // grocery basket or introduce false price conflicts.
     if(item.qty===0)continue;
+    if(!Number.isFinite(item.pack)||item.pack<=0)throw new Error("Invalid grocery package size for "+item.name);
     const key=item.name+"|"+item.unit;
     const previous=merged.get(key);
     // Different recipes can specify different package sizes for the same item.
