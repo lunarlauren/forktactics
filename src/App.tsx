@@ -102,7 +102,7 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
   const limit=Math.max(0,s.budget);
   const used=new Set(locked);
   const plan=[...s.plan];
-  const slots=plan.map((id,i)=>i).filter(i=>!s.locked[i]&&(!preserveChosen||!id));
+  const slots=plan.map((id,i)=>i).filter(i=>!s.locked[i]&&(!preserveChosen||!plan[i]));
   const total=(chosen:Recipe[])=>priceGroceryBasket(scaleMeals(chosen,s.household||2),priceSheet,s.pantryQuantities||{}).knownTotal;
   if(total(lockedMeals)>limit)return {next:s,result:"over-budget"};
   if(s.requireKnownPrices&&priceGroceryBasket(scaleMeals(lockedMeals,s.household||2),priceSheet,s.pantryQuantities||{}).unknownCount>0)return {next:s,result:"unknown-prices"};
