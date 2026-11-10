@@ -75,3 +75,23 @@ test("changed meal requirements recompute outstanding costs from current lines",
   assert.deepEqual(outstandingGroceryEstimate(before.lines,purchased),{knownTotal:2.5,unknownCount:0});
   assert.deepEqual(outstandingGroceryEstimate(after.lines,purchased),{knownTotal:5,unknownCount:0});
 });
+
+test("a price-sheet package-size change requires an explicit matching shelf price",()=>{
+  const meals=[meal(ingredient("Rice",600,500,2.5))];
+  const unresolved=priceGroceryBasket(meals,{"Rice|g|pack":1000});
+  assert.equal(unresolved.lines[0].pack,1000);
+  assert.equal(unresolved.lines[0].cost,null);
+  assert.equal(unresolved.unknownCount,1);
+  const resolved=priceGroceryBasket(meals,{"Rice|g|pack":1000,"Rice|g":4.25});
+  assert.equal(resolved.lines[0].packs,1);
+  assert.equal(resolved.knownTotal,4.25);
+  assert.equal(resolved.unknownCount,0);
+});
+test("an explicit unknown price overrides a recipe estimate rather than counting it as free",()=>{
+  const result=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5))],{"Rice|g":null});
+  assert.equal(result.lines[0].packs,2);
+  assert.equal(result.lines[0].cost,null);
+  assert.equal(result.knownTotal,0);
+  assert.equal(result.unknownCount,1);
+  assert.deepEqual(outstandingGroceryEstimate(result.lines,{"Rice|g":600}),{knownTotal:0,unknownCount:0});
+});
