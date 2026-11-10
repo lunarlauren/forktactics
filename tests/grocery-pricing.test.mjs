@@ -35,6 +35,23 @@ test("zero-quantity optional ingredients do not add unknown prices",()=>{
  assert.equal(result.lines.length,1);
  assert.equal(result.unknownCount,0);
 });
-test("invalid package quantities are rejected",()=>{
- assert.throws(()=>priceGroceryBasket([{ingredients:[ingredient("Rice",100,0,4)]}]),/Invalid grocery quantity/);
+test("invalid package sizes for required ingredients are rejected",()=>{
+ assert.throws(()=>priceGroceryBasket([{ingredients:[ingredient("Rice",100,0,4)]}]),/Invalid grocery package size for Rice/);
+ assert.throws(()=>priceGroceryBasket([{ingredients:[ingredient("Rice",100,-5,4)]}]),/Invalid grocery package size for Rice/);
+});
+test("zero-quantity ingredients with missing package size are ignored",()=>{
+ const result=priceGroceryBasket([{ingredients:[ingredient("Optional garnish",0,0,null),ingredient("Rice",100,500,4)]}]);
+ assert.deepEqual(result.lines.map(line=>line.name),["Rice"]);
+ assert.equal(result.knownTotal,4);
+ assert.equal(result.unknownCount,0);
+});
+test("zero-quantity conflicting package metadata does not poison a required ingredient",()=>{
+ const meals=[{ingredients:[ingredient("Rice",0,0,null)]},{ingredients:[ingredient("Rice",300,500,4)]}];
+ const result=priceGroceryBasket(meals);
+ assert.equal(result.lines.length,1);
+ assert.equal(result.lines[0].pack,500);
+ assert.equal(result.lines[0].cost,4);
+});
+test("invalid nonzero quantities remain rejected even when package size is missing",()=>{
+ assert.throws(()=>priceGroceryBasket([{ingredients:[ingredient("Rice",-1,0,null)]}]),/Invalid grocery quantity for Rice/);
 });
