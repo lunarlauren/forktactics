@@ -142,6 +142,10 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
       result=s.requireKnownPrices&&withinKnownBudget?"unknown-prices":"over-budget";
     }
   }
+  // Full-week generation is transactional: if any flexible day cannot be filled,
+  // keep the existing menu rather than replacing chosen dinners with blanks.
+  // Fill-empty-days remains incremental and may retain successful additions.
+  if(!preserveChosen&&slots.some(i=>!plan[i]))return {next:s,result};
   const nextBasket=priceGroceryBasket(scaleMeals(plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),s.household||2),priceSheet,s.pantryQuantities||{});
   const previousBasket=priceGroceryBasket(scaleMeals(s.plan.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),s.household||2),priceSheet,s.pantryQuantities||{});
   const stillChecked=(name:string)=>previousBasket.lines.some(before=>(name===before.name||name===before.name+"|"+before.unit)&&nextBasket.lines.some(after=>after.name===before.name&&after.unit===before.unit&&after.qty===before.qty));
