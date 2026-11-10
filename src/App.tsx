@@ -96,14 +96,14 @@ function completeSetup(setup:Setup){update(s=>({...s,...(redoPreferences?{}:{pla
 function cook(id:string){const chosen=recipes.find(r=>r.id===id);if(!chosen)return;if(!window.confirm(`Confirm you cooked ${chosen.name}? This records one cook and updates your collection.`))return;const event={id:crypto.randomUUID(),recipe:id,at:new Date().toISOString()};const first=state.events.length===0&&!state.gift;const eligible=recipes.filter(r=>!(state.dislikes||[]).includes(r.id));const pool=eligible.length?eligible:[chosen];const randomIndex=first?crypto.getRandomValues(new Uint32Array(1))[0]%pool.length:0;const bonusId=pool[randomIndex].id;update(s=>({...s,cooks:{...s.cooks,[id]:(s.cooks[id]||0)+1},events:[...s.events,event],gift:s.gift||(first?bonusId:null)}));setSelected(null);setToast("Dinner logged! Your collection is growing.");if(first)setShowGift(true)}
 function undo(){const last=state.events[state.events.length-1];if(!last)return;update(s=>({...s,events:s.events.slice(0,-1),cooks:{...s.cooks,[last.recipe]:Math.max(0,(s.cooks[last.recipe]||0)-1)}}));setToast("Last cook undone. Your first gift stays yours.")}
 function swap(index:number,id:string){if(state.locked[index]){setPicker(null);setToast("Unlock this day before changing its dinner.");return;}update(s=>{if(s.locked[index])return s;const nextPlan=s.plan.map((x,i)=>i===index?id:x);const nextLines=priceGroceryBasket(scaleMeals(nextPlan.map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.household||2),s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{},s.pantryQuantities||{}).lines;const previousLines=priceGroceryBasket(scaleMeals(s.plan.map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.household||2),s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{},s.pantryQuantities||{}).lines;return {...s,plan:nextPlan,checked:s.checked.filter(name=>previousLines.some(before=>(name===before.name||name===before.name+"|"+before.unit)&&nextLines.some(after=>after.name===before.name&&after.unit===before.unit&&after.qty===before.qty))) }});setPicker(null);setToast("Dinner swapped. Existing grocery checks were kept for ingredients still needed.")}
-function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"over-budget"|"no-recipes"|"unknown-prices"|"locked-empty"|"missing-locked-recipe"}{
+function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"over-budget"|"no-recipes"|"unknown-prices"|"locked-empty"|"missing-locked-recipe"|"missing-chosen-recipe"}{
   // A locked blank day cannot be populated by full-week generation.
   // Report it instead of claiming a complete week or modifying other days.
   if(!preserveChosen&&s.plan.some((id,i)=>s.locked[i]&&!id))return {next:s,result:"locked-empty"};
   // Saved plans may reference recipes removed from a collection or an imported backup.
   // A locked missing recipe must never be treated as a valid filled dinner.
   if(s.plan.some((id,i)=>s.locked[i]&&id&&!recipes.some(recipe=>recipe.id===id)))return {next:s,result:"missing-locked-recipe"};
-  const eligible=recipes.filter(r=>!(s.dislikes||[]).includes(r.id));
+  // Fill-empty-days must not silently retain an unavailable selected dinner.\n  if(preserveChosen&&s.plan.some(id=>id&&!recipes.some(recipe=>recipe.id===id)))return {next:s,result:"missing-chosen-recipe"};\n  const eligible=recipes.filter(r=>!(s.dislikes||[]).includes(r.id));
   if(!eligible.length)return {next:s,result:"no-recipes"};
   const mode=s.planningMode||(s.preferVariety===false?"money":"variety");
   const locked=s.plan.filter((id,i)=>(s.locked[i]||preserveChosen)&&id);
@@ -161,7 +161,7 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
 function fillOpenDays(){
   const {next,result}=generatePlan(state,true);
   setState(previous=>previous===state?next:generatePlan(previous,true).next);
-  setToast(result==="missing-locked-recipe"?"A locked dinner is missing from your collection. Unlock or replace it before filling open days.":result==="no-recipes"?"No available recipes. Review your Yuck ratings.":result==="over-budget"?"Kept your selected dinners. Some open days could not fit the known-price budget.":result==="unknown-prices"?"Kept your selected dinners. Some prices are unknown or required prices are missing.":"Filled open days without replacing dinners you chose. Store prices may differ.");
+  setToast(result==="missing-chosen-recipe"?"A selected dinner is missing from your collection. Replace or clear it before filling open days; your menu was left unchanged.":result==="missing-locked-recipe"?"A locked dinner is missing from your collection. Unlock or replace it before filling open days.":result==="no-recipes"?"No available recipes. Review your Yuck ratings.":result==="over-budget"?"Kept your selected dinners. Some open days could not fit the known-price budget.":result==="unknown-prices"?"Kept your selected dinners. Some prices are unknown or required prices are missing.":"Filled open days without replacing dinners you chose. Store prices may differ.");
 }
 function shuffle(){
   // Calculate the result before scheduling React's state update, so feedback never
