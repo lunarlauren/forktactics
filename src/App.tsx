@@ -184,7 +184,12 @@ const recoveryFor=(selectedRecipe:Recipe)=>{
    visit(index+1,lineup);
  };
  if(needed===0)evaluate([]);
- else visit(0,[]);
+ else if(options.length<needed){
+   // An incomplete menu cannot supply enough distinct dinners to reach the
+   // target. Still recommend groceries for the selected meal and every
+   // available alternative instead of returning no recovery guidance.
+   evaluate(options);
+ }else visit(0,[]);
  return {needed,best};
 };
 const queueRecovery=(selectedRecipe:Recipe)=>{
