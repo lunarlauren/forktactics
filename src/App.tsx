@@ -103,7 +103,9 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
   // Saved plans may reference recipes removed from a collection or an imported backup.
   // A locked missing recipe must never be treated as a valid filled dinner.
   if(s.plan.some((id,i)=>s.locked[i]&&id&&!recipes.some(recipe=>recipe.id===id)))return {next:s,result:"missing-locked-recipe"};
-  // Fill-empty-days must not silently retain an unavailable selected dinner.\n  if(preserveChosen&&s.plan.some(id=>id&&!recipes.some(recipe=>recipe.id===id)))return {next:s,result:"missing-chosen-recipe"};\n  const eligible=recipes.filter(r=>!(s.dislikes||[]).includes(r.id));
+  // Fill-empty-days must not silently retain an unavailable selected dinner.
+  if(preserveChosen&&s.plan.some(id=>id&&!recipes.some(recipe=>recipe.id===id)))return {next:s,result:"missing-chosen-recipe"};
+  const eligible=recipes.filter(r=>!(s.dislikes||[]).includes(r.id));
   if(!eligible.length)return {next:s,result:"no-recipes"};
   const mode=s.planningMode||(s.preferVariety===false?"money":"variety");
   const locked=s.plan.filter((id,i)=>(s.locked[i]||preserveChosen)&&id);
