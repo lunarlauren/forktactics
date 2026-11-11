@@ -84,7 +84,7 @@ const sheet=state.priceSheets?.[state.activePriceSheet||"Sample prices"]||{};con
 const pricedBasket=useMemo(()=>priceGroceryBasket(scaleMeals(state.plan.slice(0,state.shoppingTarget||Math.min(5,state.plan.length)).map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),state.household||2),sheet,state.pantryQuantities||{}),[state.plan,state.shoppingTarget,recipes,state.priceSheets,state.activePriceSheet,state.pantryQuantities,state.household]);
 const basket=pricedBasket.lines;
 // Derive menu readiness from acquired packages and cooked consumption.
-// Manual shopping checkmarks mean the planned whole packages were acquired;
+// Shopping checkmarks only count as acquired after the shopping trip is confirmed;
 // detailed purchase counts remain optional.
 const stock=useMemo(()=>{
  const available=new Map<string,number>();
@@ -98,7 +98,7 @@ const stock=useMemo(()=>{
  for(const line of basket){
    const key=line.name+"|"+line.unit;
    const purchased=state.purchasedQuantities?.[key]||0;
-   const checked=state.checked.includes(key)||state.checked.includes(line.name)&&basket.filter(x=>x.name===line.name).length===1;
+   const checked=Boolean(state.tripStartedAt)&&(state.checked.includes(key)||state.checked.includes(line.name)&&basket.filter(x=>x.name===line.name).length===1);
    // Never count a checked basket line and its recorded purchase twice.
    available.set(key,(state.pantryQuantities?.[key]||0)+Math.max(purchased,checked?line.packs*line.pack:0));
  }
