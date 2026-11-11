@@ -158,7 +158,7 @@ const recoveryFor=(selectedRecipe:Recipe)=>{
  const evaluate=(lineup:Recipe[])=>{
    const demand=new Map<string,number>();
    for(const r of [selectedRecipe,...lineup])for(const i of ingredientList(r)){const key=i.name+"|"+i.unit;demand.set(key,(demand.get(key)||0)+i.qty)}
-   const priced=priceGroceryBasket(scaleMeals(lineup,state.household||2),sheetPrices,{});
+   const priced=priceGroceryBasket(scaleMeals([selectedRecipe,...lineup],state.household||2),sheetPrices,{});
    const lines=priced.lines.flatMap(line=>{
      const key=line.name+"|"+line.unit;
      const shortage=Math.max(0,(demand.get(key)||0)-(remaining.get(key)||0)-(queued.get(key)||0));
