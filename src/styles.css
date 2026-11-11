@@ -109,3 +109,18 @@
 /* Previously rated recipes must visibly retain both Yum and Yuck choices. */
 .recipe-rating-actions .yuck-selected, .rating-yuck-active { background:#f5ded9 !important; border-color:#9f5148 !important; color:#702f2a !important; font-weight:800; }
 .recipe-rating-actions button[aria-pressed="true"], .rating-yuck-active { box-shadow:inset 0 0 0 2px currentColor; }
+
+/* TCG collection pass: framed recipe cards, tactile focus, restrained foil. */
+.recipe-card{position:relative;isolation:isolate;border:2px solid #bda06a;border-radius:13px;background:#fdf9ed;box-shadow:inset 0 0 0 3px #fff8e8,0 5px 14px #263c3014;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.recipe-card::before{content:"";position:absolute;inset:5px;border:1px solid #cbb789;border-radius:8px;pointer-events:none;z-index:2}
+.recipe-card:hover{transform:translateY(-5px);border-color:#a67b39;box-shadow:inset 0 0 0 3px #fff8e8,0 14px 28px #263c3029}
+.recipe-card:focus-visible{outline:3px solid #286347;outline-offset:4px}
+.recipe-card .recipe-art{margin:9px 9px 0;height:185px;border:1px solid #c9b78b;border-radius:6px;box-shadow:inset 0 0 0 3px #fff9dc55}
+.recipe-card .recipe-card-body{padding:14px 18px 18px}
+.recipe-card .recipe-card-body strong{color:#284635;font-family:"Playfair Display",serif;font-size:17px;line-height:1.25;letter-spacing:-.015em}
+.recipe-card .card-meta{border-top:1px solid #dcd1b4;padding-top:11px;color:#536d59}
+.recipe-card .holo{background-image:linear-gradient(110deg,#b7f1ff77 0%,transparent 25%,#ffe8a277 45%,transparent 65%,#d6b4ff88 100%),linear-gradient(135deg,#e9caa2,#a4bf9d,#c7b0c5);box-shadow:inset 0 0 0 3px #f5e5a2}
+.day-card{border:1px solid #c9bd9e;box-shadow:inset 0 0 0 3px #fffaf0,0 4px 12px #263c300d}
+.day-card .day-art{border:1px solid #d7c9a7}
+@media(max-width:760px){.recipe-card .recipe-art{height:clamp(120px,36vw,185px);margin:7px 7px 0}.recipe-card .recipe-card-body{padding:11px 12px 14px}.recipe-card .recipe-card-body strong{font-size:15px}.recipe-card .card-meta{gap:7px;flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.recipe-card{transition:none}.recipe-card:hover{transform:none}}
