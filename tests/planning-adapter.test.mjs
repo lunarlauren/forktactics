@@ -119,3 +119,14 @@ test("invalid recipe shelf prices normalize to unknown without affecting stocked
   assert.equal(stocked.unknownCount,0);
   assert.deepEqual(outstandingGroceryEstimate(stocked.lines),{knownTotal:0,unknownCount:0});
 });
+
+test("invalid explicit package overrides never fall back to recipe package pricing",()=>{
+  const meals=[meal(ingredient("Rice",600,500,2.5))];
+  for(const invalidPack of [0,-1,Number.NaN,Infinity,"bad"]){
+    const basket=priceGroceryBasket(meals,{"Rice|g|pack":invalidPack});
+    assert.equal(basket.lines[0].pack,0);
+    assert.equal(basket.lines[0].cost,null);
+    assert.equal(basket.unknownCount,1);
+    assert.deepEqual(outstandingGroceryEstimate(basket.lines),{knownTotal:0,unknownCount:1});
+  }
+});
