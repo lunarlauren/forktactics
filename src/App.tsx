@@ -107,15 +107,35 @@ const stock=useMemo(()=>{
  return available;
 },[basket,state.purchasedQuantities,state.pantryQuantities,state.checked,state.events,state.tripStartedAt,recipes,state.household]);
 const missingFor=(r:Recipe)=>scaleMeals([r],state.household||2)[0].ingredients.filter(i=>i.qty>0&&(stock.get(i.name+"|"+i.unit)||0)+0.000001<i.qty).map(i=>i.name);
-const cookableAfter=(r:Recipe)=>{
- const after=new Map(stock);
- for(const ingredient of scaleMeals([r],state.household||2)[0].ingredients){
-   const key=ingredient.name+"|"+ingredient.unit;
-   after.set(key,(after.get(key)||0)-ingredient.qty);
- }
- return state.plan.filter(id=>id&&id!==r.id).map(id=>recipes.find(recipe=>recipe.id===id)).filter((recipe):recipe is Recipe=>Boolean(recipe)).filter(recipe=>scaleMeals([recipe],state.household||2)[0].ingredients.every(i=>i.qty<=0||(after.get(i.name+"|"+i.unit)||0)+0.000001>=i.qty)).length;
+// Evaluate combinations against the same finite stock, not each dinner independently.
+// Every menu option can be cooked at most once in a suggested lineup.
+const forecastAfter=(selectedRecipe:Recipe)=>{
+ const remaining=new Map(stock);
+ const requirements=(recipe:Recipe)=>scaleMeals([recipe],state.household||2)[0].ingredients.filter(x=>x.qty>0).map(x=>({key:x.name+"|"+x.unit,qty:x.qty}));
+ const deduct=(req:{key:string;qty:number}[])=>{for(const x of req)remaining.set(x.key,(remaining.get(x.key)||0)-x.qty)};
+ const selectedReq=requirements(selectedRecipe);
+ if(selectedReq.some(x=>(remaining.get(x.key)||0)+1e-6<x.qty))return {lineup:[] as Recipe[],possible:false,needed:0};
+ deduct(selectedReq);
+ const currentCooks=state.events.filter(e=>Boolean(state.tripStartedAt)&&e.at>=state.tripStartedAt!).length;
+ const needed=Math.max(0,Math.min(state.shoppingTarget||5,state.plan.length)-currentCooks-1);
+ const candidates=state.plan.filter((id,i)=>id&&id!==selectedRecipe.id&&state.plan.indexOf(id)===i)
+   .map(id=>recipes.find(recipe=>recipe.id===id)).filter((recipe):recipe is Recipe=>Boolean(recipe));
+ const options=candidates.map(recipe=>({recipe,req:requirements(recipe)}));
+ let best:Recipe[]=[];
+ const search=(index:number,chosen:Recipe[])=>{
+   if(chosen.length>best.length)best=[...chosen];
+   if(best.length>=needed||index>=options.length||chosen.length+options.length-index<=best.length)return;
+   const option=options[index];
+   if(option.req.every(x=>(remaining.get(x.key)||0)+1e-6>=x.qty)){
+     deduct(option.req);
+     search(index+1,[...chosen,option.recipe]);
+     for(const x of option.req)remaining.set(x.key,(remaining.get(x.key)||0)+x.qty);
+   }
+   search(index+1,chosen);
+ };
+ search(0,[]);
+ return {lineup:best,possible:best.length>=needed,needed};
 };
-
 const groceryCheckKey=(i:{name:string;unit:string})=>i.name+"|"+i.unit;const isChecked=(i:{name:string;unit:string})=>state.checked.includes(groceryCheckKey(i))||(state.checked.includes(i.name)&&basket.filter(line=>line.name===i.name).length===1);
 const outstanding=outstandingGroceryEstimate(basket,state.purchasedQuantities||{});const subtotal=outstanding.knownTotal;const unknown=outstanding.unknownCount;const purchasedFor=(i:typeof basket[number])=>{const n=state.purchasedQuantities?.[i.name+"|"+i.unit];return typeof n==="number"&&Number.isFinite(n)&&n>0?n:0};const remainingToBuy=(i:typeof basket[number])=>Math.max(0,i.qty-purchasedFor(i));const remainingPacks=(i:typeof basket[number])=>i.pack>0?Math.ceil(remainingToBuy(i)/i.pack):null;const completed=(i:typeof basket[number])=>remainingToBuy(i)===0||isChecked(i);const bought=basket.filter(completed).length;const menuConfirmed=state.confirmedPlan===state.plan.join("|")+"#"+(state.shoppingTarget||5);const manuallyChecked=basket.filter(i=>isChecked(i)&&i.qty>purchasedFor(i)&&i.qty>0).length;const days=menuSlots(state.plan.length);const totalCooks=Object.values(state.cooks).reduce((a,b)=>a+b,0);const totalXp=state.events.reduce((sum,event)=>sum+(typeof event.xp==="number"&&Number.isFinite(event.xp)?event.xp:recipePower(recipes.find(r=>r.id===event.recipe)||starterRecipes.find(r=>r.id===event.recipe)||{ingredients:[],steps:[],time:0} as Recipe)),0);
 function update(f:(s:State)=>State){setState(s=>f(s))}function updatePriceSheetValue(key:string,raw:string){update(s=>{const value=raw.trim()===""?null:Number(raw);if(value!==null&&(!Number.isFinite(value)||value<0||(key.endsWith("|pack")&&value<=0)))return s;const name=s.activePriceSheet||"Sample prices";return {...s,priceSheets:{...s.priceSheets,[name]:{...s.priceSheets?.[name],[key]:value===null?null:key.endsWith("|pack")?value:Math.round(value*100)/100}}}})}
@@ -131,7 +151,7 @@ function openRatings(){setReturnToPicker(null);setActivePackIds(null);setRatingI
 function closeRatings(){setShowRatings(false);setActivePackIds(null);if(returnToPicker!==null){setPicker(returnToPicker);setReturnToPicker(null)}}
 function rateRecipe(id:string,kind:"yum"|"yuck"|"skip",advance=true){update(s=>({...s,likes:kind==="yum"?[...new Set([...(s.likes||[]),id])]:kind==="yuck"?(s.likes||[]).filter(x=>x!==id):s.likes,dislikes:kind==="yuck"?[...new Set([...(s.dislikes||[]),id])]:kind==="yum"?(s.dislikes||[]).filter(x=>x!==id):s.dislikes}));if(advance)setRatingIndex(i=>i+1)}
 function completeSetup(setup:Setup){update(s=>({...s,...(redoPreferences?{}:{plan:Array(s.plan.length).fill(""),locked:Array(s.plan.length).fill(false),mealTarget:s.plan.length,checked:[]}),budget:setup.budget,household:setup.household,likes:setup.likes,dislikes:setup.dislikes,onboarded:true}));setRedoPreferences(false);setDay(0);setTab(redoPreferences?"Week":"Packs");setToast(redoPreferences?"Preferences updated. Your existing meal plan and grocery checks are unchanged.":"Your week is empty. Open a recipe pack to start rating Yum or Yuck.");}
-function cook(id:string){const chosen=recipes.find(r=>r.id===id);if(!chosen)return;const missing=missingFor(chosen);if(menuConfirmed&&missing.length){setToast("Needs restock: "+missing.slice(0,3).join(", "));return;}if(!window.confirm(`Cook ${chosen.name}? ${menuConfirmed?`${cookableAfter(chosen)} other menu options would still have enough ingredients immediately afterward. `:""}This records one cook and earns XP.`))return;const earnedXp=recipePower(chosen);const event={id:crypto.randomUUID(),recipe:id,at:new Date().toISOString(),xp:earnedXp};const first=state.events.length===0&&!state.gift;const eligible=recipes.filter(r=>!(state.dislikes||[]).includes(r.id));const pool=eligible.length?eligible:[chosen];const randomIndex=first?crypto.getRandomValues(new Uint32Array(1))[0]%pool.length:0;const bonusId=pool[randomIndex].id;update(s=>({...s,cooks:{...s.cooks,[id]:(s.cooks[id]||0)+1},events:[...s.events,event],gift:s.gift||(first?bonusId:null)}));setSelected(null);setToast(`Dinner logged! +${earnedXp} XP earned.`);if(first)setShowGift(true)}
+function cook(id:string){const chosen=recipes.find(r=>r.id===id);if(!chosen)return;const missing=missingFor(chosen);if(menuConfirmed&&missing.length){setToast("Needs restock: "+missing.slice(0,3).join(", "));return;}const forecast=menuConfirmed?forecastAfter(chosen):null;if(!window.confirm(`Cook ${chosen.name}? ${forecast?`Afterward, ${forecast.lineup.length} additional distinct meals can be made together from recorded stock; ${forecast.needed} are needed to reach your shopping target. ${forecast.possible?"Target remains feasible.":"Target may require restocking."}${forecast.lineup.length?" Example: "+forecast.lineup.map(r=>r.name).join(", ")+".":""} `:""}This records one cook and earns XP.`))return;const earnedXp=recipePower(chosen);const event={id:crypto.randomUUID(),recipe:id,at:new Date().toISOString(),xp:earnedXp};const first=state.events.length===0&&!state.gift;const eligible=recipes.filter(r=>!(state.dislikes||[]).includes(r.id));const pool=eligible.length?eligible:[chosen];const randomIndex=first?crypto.getRandomValues(new Uint32Array(1))[0]%pool.length:0;const bonusId=pool[randomIndex].id;update(s=>({...s,cooks:{...s.cooks,[id]:(s.cooks[id]||0)+1},events:[...s.events,event],gift:s.gift||(first?bonusId:null)}));setSelected(null);setToast(`Dinner logged! +${earnedXp} XP earned.`);if(first)setShowGift(true)}
 function undo(){const last=state.events[state.events.length-1];if(!last)return;update(s=>({...s,events:s.events.slice(0,-1),cooks:{...s.cooks,[last.recipe]:Math.max(0,(s.cooks[last.recipe]||0)-1)}}));setToast("Last cook undone. Your first gift stays yours.")}
 function swap(index:number,id:string){if(state.locked[index]){setPicker(null);setToast("Unlock this menu option before changing its recipe.");return;}update(s=>{if(s.locked[index])return s;const nextPlan=s.plan.map((x,i)=>i===index?id:x);const nextLines=priceGroceryBasket(scaleMeals(nextPlan.slice(0,s.shoppingTarget||5).map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.household||2),s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{},s.pantryQuantities||{}).lines;const previousLines=priceGroceryBasket(scaleMeals(s.plan.slice(0,s.shoppingTarget||5).map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.household||2),s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{},s.pantryQuantities||{}).lines;return {...s,plan:nextPlan,checked:s.checked.filter(name=>previousLines.some(before=>(name===before.name||name===before.name+"|"+before.unit)&&nextLines.some(after=>after.name===before.name&&after.unit===before.unit&&after.qty===before.qty))) }});setPicker(null);setToast("Dinner swapped. Existing grocery checks were kept for ingredients still needed.")}
 function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"over-budget"|"no-recipes"|"unknown-prices"|"locked-empty"|"missing-locked-recipe"|"missing-chosen-recipe"|"not-enough-recipes"}{
