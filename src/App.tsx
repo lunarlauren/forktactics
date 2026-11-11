@@ -214,22 +214,12 @@ function swap(index:number,id:string){
  if(state.locked[index]){setPicker(null);setToast("Unlock this menu option before changing its recipe.");return;}
  update(s=>{
   if(s.locked[index])return s;
-  const nextPlan=s.plan.map((x,i)=>i===index?id:x);
-  // Freeze checked-off purchases before recalculating the menu basket.
-  // A recipe swap must not erase ingredients already bought for this trip.
-  const previousLines=priceGroceryBasket(
-   scaleMeals(s.plan.slice(0,s.shoppingTarget||5).map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.household||2),
-   s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{},s.pantryQuantities||{}
-  ).lines;
-  const purchases={...(s.purchasedQuantities||{})};
-  for(const line of previousLines){
-   const key=line.name+"|"+line.unit;
-   const checked=s.checked.includes(key)||s.checked.includes(line.name)&&previousLines.filter(x=>x.name===line.name).length===1;
-   if(checked)purchases[key]=Math.max(purchases[key]||0,line.packs*line.pack);
-  }
-  return {...s,plan:nextPlan,purchasedQuantities:purchases};
+  // A checked grocery is only a pending shopping selection. Do not convert it
+  // into a purchase when editing the menu; confirmation owns that transition.
+  // Existing purchasedQuantities persist independently of the current basket.
+  return {...s,plan:s.plan.map((x,i)=>i===index?id:x)};
  });
- setPicker(null);setToast("Dinner swapped. Recorded purchases were preserved; review any new grocery needs.");
+ setPicker(null);setToast("Dinner swapped. Recorded purchases and pending shopping checks are preserved; review new grocery needs.");
 }
 function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"over-budget"|"no-recipes"|"unknown-prices"|"locked-empty"|"missing-locked-recipe"|"missing-chosen-recipe"|"not-enough-recipes"}{
   // A locked blank day cannot be populated by full-week generation.
