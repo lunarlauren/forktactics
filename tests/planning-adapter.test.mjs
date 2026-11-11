@@ -95,3 +95,27 @@ test("an explicit unknown price overrides a recipe estimate rather than counting
   assert.equal(result.unknownCount,1);
   assert.deepEqual(outstandingGroceryEstimate(result.lines,{"Rice|g":600}),{knownTotal:0,unknownCount:0});
 });
+
+test("invalid shelf-price overrides remain unknown instead of creating misleading totals",()=>{
+  const meals=[meal(ingredient("Rice",600,500,2.5))];
+  for(const invalidPrice of [-2,Number.NaN,Infinity,-Infinity,"not a price"]){
+    const basket=priceGroceryBasket(meals,{"Rice|g":invalidPrice});
+    assert.equal(basket.lines[0].price,null);
+    assert.equal(basket.lines[0].cost,null);
+    assert.equal(basket.knownTotal,0);
+    assert.equal(basket.unknownCount,1);
+    assert.deepEqual(outstandingGroceryEstimate(basket.lines),{knownTotal:0,unknownCount:1});
+  }
+});
+
+test("invalid recipe shelf prices normalize to unknown without affecting stocked ingredients",()=>{
+  const meals=[meal(ingredient("Rice",600,500,-4))];
+  const basket=priceGroceryBasket(meals);
+  assert.equal(basket.lines[0].price,null);
+  assert.equal(basket.unknownCount,1);
+  const stocked=priceGroceryBasket(meals,{},{"Rice|g":600});
+  assert.equal(stocked.lines[0].price,null);
+  assert.equal(stocked.lines[0].cost,0);
+  assert.equal(stocked.unknownCount,0);
+  assert.deepEqual(outstandingGroceryEstimate(stocked.lines),{knownTotal:0,unknownCount:0});
+});
