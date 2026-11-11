@@ -124,3 +124,12 @@
 .day-card .day-art{border:1px solid #d7c9a7}
 @media(max-width:760px){.recipe-card .recipe-art{height:clamp(120px,36vw,185px);margin:7px 7px 0}.recipe-card .recipe-card-body{padding:11px 12px 14px}.recipe-card .recipe-card-body strong{font-size:15px}.recipe-card .card-meta{gap:7px;flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.recipe-card{transition:none}.recipe-card:hover{transform:none}}
+
+/* Collection card taste indicators complement the TCG frame without hiding card art. */
+.recipe-card-kicker{display:flex;justify-content:space-between;align-items:center;gap:6px;min-height:23px}
+.recipe-card-status{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:4px 7px;border:1px solid;border-radius:5px;font-size:9px;font-weight:900;letter-spacing:.07em;line-height:1}
+.recipe-card-status.yum{background:#e3f0df;border-color:#8fb18a;color:#275c36}
+.recipe-card-status.yuck{background:#f5e3df;border-color:#ca978f;color:#854139}
+.recipe-card-yum{border-color:#8eae77}
+.recipe-card-yuck{border-color:#c6a29a}
+@media(max-width:760px){.recipe-card-kicker{flex-wrap:wrap}.recipe-card-status{font-size:8px;padding:4px 5px}}
