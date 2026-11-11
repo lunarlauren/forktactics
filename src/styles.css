@@ -169,3 +169,9 @@
 .shop-advanced>summary{font-size:11px}
 .shop-advanced small{display:block;margin:9px 0}
 .shop-row .check-square{min-width:34px;min-height:34px}
+
+/* Menu availability follows acquired grocery packages minus recorded cooks. */
+.day-card.menu-unavailable{opacity:.55;filter:grayscale(.65)}
+.day-card.menu-unavailable .day-art{filter:grayscale(.85)}
+.day-card .menu-missing{color:#963f35;font-weight:750;line-height:1.4}
+.day-card .menu-ready{color:#2c7049;font-weight:750}
