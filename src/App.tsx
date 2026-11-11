@@ -88,6 +88,13 @@ const basket=pricedBasket.lines;
 // detailed purchase counts remain optional.
 const stock=useMemo(()=>{
  const available=new Map<string,number>();
+ // Purchases are trip inventory, not a property of whichever recipes are on screen.
+ for(const [key,quantity] of Object.entries(state.purchasedQuantities||{})){
+  if(Number.isFinite(quantity)&&quantity>0)available.set(key,quantity);
+ }
+ for(const [key,quantity] of Object.entries(state.pantryQuantities||{})){
+  if(Number.isFinite(quantity)&&quantity>0)available.set(key,(available.get(key)||0)+quantity);
+ }
  for(const line of basket){
    const key=line.name+"|"+line.unit;
    const purchased=state.purchasedQuantities?.[key]||0;
@@ -202,7 +209,27 @@ function rateRecipe(id:string,kind:"yum"|"yuck"|"skip",advance=true){update(s=>(
 function completeSetup(setup:Setup){update(s=>({...s,...(redoPreferences?{}:{plan:Array(s.plan.length).fill(""),locked:Array(s.plan.length).fill(false),mealTarget:s.plan.length,checked:[]}),budget:setup.budget,household:setup.household,likes:setup.likes,dislikes:setup.dislikes,onboarded:true}));setRedoPreferences(false);setDay(0);setTab(redoPreferences?"Week":"Packs");setToast(redoPreferences?"Preferences updated. Your existing meal plan and grocery checks are unchanged.":"Your week is empty. Open a recipe pack to start rating Yum or Yuck.");}
 function cook(id:string){const chosen=recipes.find(r=>r.id===id);if(!chosen)return;if(!menuConfirmed){setTab("Shop");setSelected(null);setToast("Confirm your shopping list before logging a cooked meal.");return;}const missing=missingFor(chosen);if(missing.length){queueRecovery(chosen);return;}const forecast=menuConfirmed?forecastAfter(chosen):null;const recovery=menuConfirmed&&forecast&&!forecast.possible?recoveryFor(chosen):null;if(!window.confirm(`Cook ${chosen.name}? ${forecast?`Afterward, ${forecast.lineup.length} additional distinct meals can be made together from recorded stock; ${forecast.needed} are needed to reach your shopping target. ${forecast.possible?"Target remains feasible.":"Target may require restocking."}${forecast.lineup.length?" Example: "+forecast.lineup.map(r=>r.name).join(", ")+".":""} `:""}${recovery?.best?` Recovery shopping: ${recovery.best.lines.map(x=>`${x.packs} × ${x.name}`).join(", ")||"none"}; ${recovery.best.unknown?"at least ":""}${money(recovery.best.cost)}${recovery.best.unknown?` plus ${recovery.best.unknown} unpriced items`:""}.`:""} This records one cook and earns XP.`))return;const earnedXp=recipePower(chosen);const event={id:crypto.randomUUID(),recipe:id,at:new Date().toISOString(),xp:earnedXp};const first=state.events.length===0&&!state.gift;update(s=>({...s,cooks:{...s.cooks,[id]:(s.cooks[id]||0)+1},events:[...s.events,event],gift:s.gift||(first?id:null)}));setSelected(null);setToast(`Dinner logged! +${earnedXp} XP earned.`);if(first)setShowGift(true)}
 function undo(){const last=state.events[state.events.length-1];if(!last)return;update(s=>({...s,events:s.events.slice(0,-1),cooks:{...s.cooks,[last.recipe]:Math.max(0,(s.cooks[last.recipe]||0)-1)}}));setToast("Last cook undone. Your first gift stays yours.")}
-function swap(index:number,id:string){if(state.locked[index]){setPicker(null);setToast("Unlock this menu option before changing its recipe.");return;}update(s=>{if(s.locked[index])return s;const nextPlan=s.plan.map((x,i)=>i===index?id:x);const nextLines=priceGroceryBasket(scaleMeals(nextPlan.slice(0,s.shoppingTarget||5).map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.household||2),s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{},s.pantryQuantities||{}).lines;const previousLines=priceGroceryBasket(scaleMeals(s.plan.slice(0,s.shoppingTarget||5).map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.household||2),s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{},s.pantryQuantities||{}).lines;return {...s,plan:nextPlan,checked:s.checked.filter(name=>previousLines.some(before=>(name===before.name||name===before.name+"|"+before.unit)&&nextLines.some(after=>after.name===before.name&&after.unit===before.unit&&after.qty===before.qty))) }});setPicker(null);setToast("Dinner swapped. Existing grocery checks were kept for ingredients still needed.")}
+function swap(index:number,id:string){
+ if(state.locked[index]){setPicker(null);setToast("Unlock this menu option before changing its recipe.");return;}
+ update(s=>{
+  if(s.locked[index])return s;
+  const nextPlan=s.plan.map((x,i)=>i===index?id:x);
+  // Freeze checked-off purchases before recalculating the menu basket.
+  // A recipe swap must not erase ingredients already bought for this trip.
+  const previousLines=priceGroceryBasket(
+   scaleMeals(s.plan.slice(0,s.shoppingTarget||5).map(x=>recipes.find(r=>r.id===x)).filter((r):r is Recipe=>Boolean(r)),s.household||2),
+   s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{},s.pantryQuantities||{}
+  ).lines;
+  const purchases={...(s.purchasedQuantities||{})};
+  for(const line of previousLines){
+   const key=line.name+"|"+line.unit;
+   const checked=s.checked.includes(key)||s.checked.includes(line.name)&&previousLines.filter(x=>x.name===line.name).length===1;
+   if(checked)purchases[key]=Math.max(purchases[key]||0,line.packs*line.pack);
+  }
+  return {...s,plan:nextPlan,purchasedQuantities:purchases};
+ });
+ setPicker(null);setToast("Dinner swapped. Recorded purchases were preserved; review any new grocery needs.");
+}
 function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"over-budget"|"no-recipes"|"unknown-prices"|"locked-empty"|"missing-locked-recipe"|"missing-chosen-recipe"|"not-enough-recipes"}{
   // A locked blank day cannot be populated by full-week generation.
   // Report it instead of claiming a complete week or modifying other days.
