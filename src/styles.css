@@ -151,3 +151,10 @@
 .profile-xp{margin-left:auto;display:inline-flex;align-items:center;white-space:nowrap;padding:7px 11px;border:1px solid #c9b27a;border-radius:999px;background:#f7efd7;color:#68501c;font-size:12px;font-weight:800;letter-spacing:.025em}
 .card-power{margin-top:8px;color:#7c6026;font-size:11px;font-weight:800;letter-spacing:.02em}
 @media(max-width:460px){.profile-xp{padding:6px 8px;font-size:11px}}
+
+/* Menu size is a shopping-trip choice, never a weekday assignment. */
+.meal-target-control{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding:16px 18px;margin:0 0 16px;border:1px solid #d8cba9;border-radius:12px;background:#fffaf0}
+.meal-target-control label{font-weight:800;color:#244d36}
+.meal-target-control select{min-width:120px;min-height:42px;border:1px solid #cbb98b;border-radius:8px;padding:8px 12px;background:white;color:#244d36;font-weight:700}
+.meal-target-control small{flex-basis:100%;color:#657264;line-height:1.5}
+.meal-target-control select:focus-visible{outline:3px solid #b78b39;outline-offset:2px}
