@@ -158,3 +158,14 @@
 .meal-target-control select{min-width:120px;min-height:42px;border:1px solid #cbb98b;border-radius:8px;padding:8px 12px;background:white;color:#244d36;font-weight:700}
 .meal-target-control small{flex-basis:100%;color:#657264;line-height:1.5}
 .meal-target-control select:focus-visible{outline:3px solid #b78b39;outline-offset:2px}
+
+/* Grocery shopping is a checklist first; numeric inventory and pricing stay optional. */
+.shop-price-settings{margin:0 0 16px;padding:10px 14px;border:1px solid #ded7c7;border-radius:10px;background:#fffdf8}
+.shop-price-settings>summary,.shop-advanced>summary{cursor:pointer;color:#47624d;font-size:12px;font-weight:700}
+.shop-price-settings>.toolbar{margin-top:14px}
+.shop-item>small{display:block;margin-top:5px;line-height:1.5;color:#607363}
+.shop-advanced{margin-top:9px}
+.shop-advanced[open]{padding:10px;border:1px solid #e4dfd2;border-radius:8px;background:#fffdf8}
+.shop-advanced>summary{font-size:11px}
+.shop-advanced small{display:block;margin:9px 0}
+.shop-row .check-square{min-width:34px;min-height:34px}
