@@ -133,3 +133,9 @@
 .recipe-card-yum{border-color:#8eae77}
 .recipe-card-yuck{border-color:#c6a29a}
 @media(max-width:760px){.recipe-card-kicker{flex-wrap:wrap}.recipe-card-status{font-size:8px;padding:4px 5px}}
+
+/* Collection filters behave like a compact card-binder index on small screens. */
+.collection-toolbar .filters{flex-wrap:wrap;align-items:center}
+.collection-toolbar .filters button{white-space:nowrap}
+.collection-toolbar .filters button:focus-visible{outline:3px solid #b78b39;outline-offset:2px}
+@media(max-width:760px){.collection-toolbar{flex-direction:column;align-items:stretch}.collection-toolbar .search{max-width:none}.collection-toolbar .filters{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;padding:3px 2px 9px;scrollbar-width:thin}.collection-toolbar .filters button{flex:0 0 auto;padding:9px 12px}}
