@@ -144,7 +144,7 @@ test("recipe swaps retain recorded purchases without inventing new ones",()=>{
   const after=priceGroceryBasket([meal(ingredient("Rice",700,500,2.5),ingredient("Tomatoes",3,2,2,"each"))]);
   const confirmed={"Rice|g":500,"Beans|can":2};
   assert.deepEqual(outstandingGroceryEstimate(before.lines,confirmed),{knownTotal:0,unknownCount:0});
-  assert.deepEqual(outstandingGroceryEstimate(after.lines,confirmed),{knownTotal:4.5,unknownCount:0});
+  assert.deepEqual(outstandingGroceryEstimate(after.lines,confirmed),{knownTotal:6.5,unknownCount:0});
   assert.deepEqual(confirmed,{"Rice|g":500,"Beans|can":2});
 });
 test("recovery purchases reduce outstanding groceries only after recording",()=>{
