@@ -28,7 +28,10 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     // An explicit unit-specific package-size override resolves conflicting recipe packs.
     // Price-sheet keys ending in |pack are reserved for package quantities.
     const packOverride=overrides[key+"|pack"];
-    // An explicitly invalid package-size override must not silently fall back to\n    // the recipe package size and display a falsely confident grocery estimate.\n    const hasPackOverride=Object.prototype.hasOwnProperty.call(overrides,key+"|pack");\n    const pack=hasPackOverride?(typeof packOverride==="number"&&Number.isFinite(packOverride)&&packOverride>0?packOverride:0):item.pack;
+    // An explicitly invalid package-size override must not silently fall back to
+    // the recipe package size and display a falsely confident grocery estimate.
+    const hasPackOverride=Object.prototype.hasOwnProperty.call(overrides,key+"|pack");
+    const pack=hasPackOverride?(typeof packOverride==="number"&&Number.isFinite(packOverride)&&packOverride>0?packOverride:0):item.pack;
     // A recipe price is tied to its recipe package size. When recipe package
     // sizes disagree, even an explicit pack-size override cannot establish a
     // trustworthy price without an explicit price-sheet price.
