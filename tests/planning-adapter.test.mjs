@@ -130,3 +130,27 @@ test("invalid explicit package overrides never fall back to recipe package prici
     assert.deepEqual(outstandingGroceryEstimate(basket.lines),{knownTotal:0,unknownCount:1});
   }
 });
+
+test("partial shopping confirmation leaves unpurchased ingredients outstanding",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5),ingredient("Beans",2,1,1.25,"can"))]);
+  // Only confirmed purchase quantities belong in this calculation. UI checkmarks
+  // must not be passed as inventory until the user records their purchases.
+  const confirmed={"Rice|g":1000};
+  assert.deepEqual(outstandingGroceryEstimate(lines,confirmed),{knownTotal:2.5,unknownCount:0});
+  assert.equal(lines.find(line=>line.name==="Beans").packs,2);
+});
+test("recipe swaps retain recorded purchases without inventing new ones",()=>{
+  const before=priceGroceryBasket([meal(ingredient("Rice",300,500,2.5),ingredient("Beans",2,1,1.25,"can"))]);
+  const after=priceGroceryBasket([meal(ingredient("Rice",700,500,2.5),ingredient("Tomatoes",3,2,2,"each"))]);
+  const confirmed={"Rice|g":500,"Beans|can":2};
+  assert.deepEqual(outstandingGroceryEstimate(before.lines,confirmed),{knownTotal:0,unknownCount:0});
+  assert.deepEqual(outstandingGroceryEstimate(after.lines,confirmed),{knownTotal:4.5,unknownCount:0});
+  assert.deepEqual(confirmed,{"Rice|g":500,"Beans|can":2});
+});
+test("recovery purchases reduce outstanding groceries only after recording",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",800,500,2.5),ingredient("Beans",2,1,1.25,"can"))]);
+  const purchased={"Rice|g":500};
+  assert.deepEqual(outstandingGroceryEstimate(lines,purchased),{knownTotal:5,unknownCount:0});
+  const confirmedRecovery={...purchased,"Beans|can":2};
+  assert.deepEqual(outstandingGroceryEstimate(lines,confirmedRecovery),{knownTotal:2.5,unknownCount:0});
+});
