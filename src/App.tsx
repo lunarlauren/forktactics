@@ -135,57 +135,48 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
   const eligible=recipes.filter(r=>!(s.dislikes||[]).includes(r.id));
   if(!eligible.length)return {next:s,result:"no-recipes"};
   const mode=s.planningMode||(s.preferVariety===false?"money":"variety");
-  const locked=s.plan.filter((id,i)=>(s.locked[i]||preserveChosen)&&id);
-  const lockedMeals=locked.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r));
   const priceSheet=s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{};
   const limit=Math.max(0,s.budget);
-  const used=new Set(locked);
-  const plan=[...s.plan];
-  const slots=plan.map((id,i)=>i).filter(i=>!s.locked[i]&&(!preserveChosen||!plan[i]));
   const shoppingCount=Math.min(s.shoppingTarget||5,s.plan.length);
-  const guaranteedChosen=()=>plan.slice(0,shoppingCount).map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r));
-  const total=(chosen:Recipe[])=>priceGroceryBasket(scaleMeals(guaranteedChosen(),s.household||2),priceSheet,s.pantryQuantities||{}).knownTotal;
-  if(total(lockedMeals)>limit)return {next:s,result:"over-budget"};
-  if(s.requireKnownPrices&&priceGroceryBasket(scaleMeals(lockedMeals,s.household||2),priceSheet,s.pantryQuantities||{}).unknownCount>0)return {next:s,result:"unknown-prices"};
-  let chosen=[...lockedMeals];
+  const plan=[...s.plan];
+  const slots=plan.map((_,i)=>i).filter(i=>!s.locked[i]&&(!preserveChosen||!plan[i]));
+  const used=new Set(plan.filter((id,i)=>Boolean(id)&&(s.locked[i]||preserveChosen)));
+  const basketFor=(ids:string[])=>priceGroceryBasket(scaleMeals(ids.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),s.household||2),priceSheet,s.pantryQuantities||{});
+  const guaranteedIds=()=>plan.slice(0,shoppingCount).filter(Boolean);
+  const initialBasket=basketFor(guaranteedIds());
+  if(initialBasket.knownTotal>limit)return {next:s,result:"over-budget"};
+  if(s.requireKnownPrices&&initialBasket.unknownCount)return {next:s,result:"unknown-prices"};
   let result:"ok"|"over-budget"|"unknown-prices"|"not-enough-recipes"="ok";
+  // Fill guaranteed meals first, regardless of which slots are locked.
+  // The shopping basket never includes the optional menu choices.
   for(const i of slots){
-    // A menu is a set of different meal options, not repeated servings of one dish.
-    // Repeats remain possible when a person explicitly chooses the same recipe twice.
     const candidates=eligible.filter(recipe=>!used.has(recipe.id));
-    if(candidates.length===0){plan[i]="";result="not-enough-recipes";continue;}
-    const pricedCandidates=candidates.map(recipe=>({recipe,basket:priceGroceryBasket(scaleMeals(i<shoppingCount?[...guaranteedChosen(),recipe]:guaranteedChosen(),s.household||2),priceSheet,s.pantryQuantities||{})}));
-    const affordable=pricedCandidates.filter(({basket})=>basket.knownTotal<=limit&&(!s.requireKnownPrices||basket.unknownCount===0)).map(({recipe})=>recipe);
-    const best=affordable.sort((a,b)=>{
-      if(i>=shoppingCount){
-        const pantry=new Set(guaranteedChosen().flatMap(r=>r.ingredients.map(ing=>ing.name+"|"+ing.unit)));
-        const overlap=(r:Recipe)=>r.ingredients.filter(ing=>pantry.has(ing.name+"|"+ing.unit)).length;
-        if(overlap(a)!==overlap(b))return overlap(b)-overlap(a);
-      }
-      const basketA=priceGroceryBasket(scaleMeals(i<shoppingCount?[...guaranteedChosen(),a]:guaranteedChosen(),s.household||2),priceSheet,s.pantryQuantities||{});
-      const basketB=priceGroceryBasket(scaleMeals(i<shoppingCount?[...guaranteedChosen(),b]:guaranteedChosen(),s.household||2),priceSheet,s.pantryQuantities||{});
-      const incrementalA=basketA.knownTotal-total(chosen);
-      const incrementalB=basketB.knownTotal-total(chosen);
-      if(mode==="money"){
-        if(basketA.unknownCount!==basketB.unknownCount)return basketA.unknownCount-basketB.unknownCount;
-        if(incrementalA!==incrementalB)return incrementalA-incrementalB;
-      }
-      const yum=s.prioritizeYum===false?0:Number((s.likes||[]).includes(b.id))-Number((s.likes||[]).includes(a.id));
+    if(!candidates.length){plan[i]="";result="not-enough-recipes";continue;}
+    const base=guaranteedIds();
+    const baseline=basketFor(base);
+    const candidateData=candidates.map(recipe=>{
+      const basket=basketFor(i<shoppingCount?[...base,recipe.id]:base);
+      const overlap=new Set(base.flatMap(id=>recipes.find(r=>r.id===id)?.ingredients.map(x=>x.name+"|"+x.unit)||[]));
+      const shared=recipe.ingredients.filter(x=>overlap.has(x.name+"|"+x.unit)).length;
+      return {recipe,basket,incremental:basket.knownTotal-baseline.knownTotal,shared};
+    });
+    const affordable=candidateData.filter(x=>x.basket.knownTotal<=limit&&(!s.requireKnownPrices||x.basket.unknownCount===0));
+    affordable.sort((a,b)=>{
+      // Optional choices are ranked by shared ingredients, not by charging
+      // their entire recipe to the guaranteed grocery basket.
+      if(i>=shoppingCount&&a.shared!==b.shared)return b.shared-a.shared;
+      if(a.basket.unknownCount!==b.basket.unknownCount)return a.basket.unknownCount-b.basket.unknownCount;
+      const yum=(s.prioritizeYum===false?0:Number((s.likes||[]).includes(b.recipe.id))-Number((s.likes||[]).includes(a.recipe.id)));
+      if(mode==="money"&&a.incremental!==b.incremental)return a.incremental-b.incremental;
       if(yum)return yum;
-      const variety=s.preferVariety===false?0:Number(used.has(a.id))-Number(used.has(b.id));
-      if(variety)return variety;
-      if(mode==="variety"){
-        if(basketA.unknownCount!==basketB.unknownCount)return basketA.unknownCount-basketB.unknownCount;
-        if(incrementalA!==incrementalB)return incrementalA-incrementalB;
-      }
-      return a.name.localeCompare(b.name);
-    })[0];
-    if(best){plan[i]=best.id;chosen.push(best);used.add(best.id);}
+      if(a.incremental!==b.incremental)return a.incremental-b.incremental;
+      return a.recipe.name.localeCompare(b.recipe.name);
+    });
+    const best=affordable[0];
+    if(best){plan[i]=best.recipe.id;used.add(best.recipe.id);}
     else{
       plan[i]="";
-      const withinKnownBudget=pricedCandidates.some(({basket})=>basket.knownTotal<=limit);
-      if(result==="not-enough-recipes")continue;
-      result=s.requireKnownPrices&&withinKnownBudget?"unknown-prices":"over-budget";
+      if(result!=="not-enough-recipes")result=s.requireKnownPrices&&candidateData.some(x=>x.basket.knownTotal<=limit)?"unknown-prices":"over-budget";
     }
   }
   // Full-week generation is transactional: if any flexible day cannot be filled,
