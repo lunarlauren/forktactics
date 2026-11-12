@@ -1,4 +1,4 @@
-import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability} from "./planning-adapter";
+import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock} from "./planning-adapter";
 import Onboarding,{type Setup} from "./Onboarding";
 import React,{useEffect,useMemo,useState} from "react";
 import {ChefHat,CalendarDays,ShoppingBasket,BookOpen,Settings2,Plus,Check,Lock,Unlock,Shuffle,ChevronRight,ArrowLeft,RotateCcw,Download,Upload,Search,Sparkles,Leaf,Wallet,Info,X,Minus,Heart,Clock,Users,CheckCircle2} from "lucide-react";
@@ -86,35 +86,10 @@ const basket=pricedBasket.lines;
 // Derive menu readiness from acquired packages and cooked consumption.
 // Shopping checkmarks only count as acquired after the shopping trip is confirmed;
 // detailed purchase counts remain optional.
-const stock=useMemo(()=>{
- const available=new Map<string,number>();
- // Purchases are trip inventory, not a property of whichever recipes are on screen.
- for(const [key,quantity] of Object.entries(state.purchasedQuantities||{})){
-  if(Number.isFinite(quantity)&&quantity>0)available.set(key,quantity);
- }
- for(const [key,quantity] of Object.entries(state.pantryQuantities||{})){
-  if(Number.isFinite(quantity)&&quantity>0)available.set(key,(available.get(key)||0)+quantity);
- }
- for(const line of basket){
-   const key=line.name+"|"+line.unit;
-   const purchased=state.purchasedQuantities?.[key]||0;
-   // Checkmarks are a shopping checklist, not acquired stock. Only quantities
-   // explicitly recorded or finalized at shopping confirmation can be cooked.
-   available.set(key,(state.pantryQuantities?.[key]||0)+purchased);
- }
- // Recovery checkmarks remain pending until explicitly recorded as purchases.
- for(const event of state.events){
-   // Cooking history earns permanent XP; only this shopping trip consumes its stock.
-   if(!state.tripStartedAt||event.at<state.tripStartedAt)continue;
-   const cooked=recipes.find(r=>r.id===event.recipe);
-   if(!cooked)continue;
-   for(const ingredient of scaleMeals([cooked],state.household||2)[0].ingredients){
-     const key=ingredient.name+"|"+ingredient.unit;
-     available.set(key,(available.get(key)||0)-ingredient.qty);
-   }
- }
- return available;
-},[basket,state.purchasedQuantities,state.pantryQuantities,state.checked,state.events,state.tripStartedAt,state.restockQueue,recipes,state.household]);
+const stock=useMemo(()=>new Map(Object.entries(remainingConfirmedStock(
+ state.purchasedQuantities||{},state.pantryQuantities||{},state.events,state.tripStartedAt,
+ id=>{const cooked=recipes.find(r=>r.id===id);return cooked?scaleMeals([cooked],state.household||2)[0].ingredients:undefined}
+))),[state.purchasedQuantities,state.pantryQuantities,state.events,state.tripStartedAt,recipes,state.household]);
 const missingFor=(r:Recipe)=>recipeIngredientAvailability(scaleMeals([r],state.household||2)[0].ingredients,Object.fromEntries(stock)).missing.map(i=>`${i.name} (${Number(i.qty.toFixed(3))} ${i.unit})`);
 // Evaluate combinations against the same finite stock, not each dinner independently.
 // Every menu option can be cooked at most once in a suggested lineup.
