@@ -46,7 +46,8 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     const pantryQty=typeof recorded==="number"&&Number.isFinite(recorded)&&recorded>0?Math.min(recorded,item.qty):0;
     const requiredQty=item.qty;
     const qty=Math.max(0,requiredQty-pantryQty);
-    const packs=pack>0?Math.ceil(qty/pack):0;
+    // Floating-point dust must not turn one full package into two.
+    const packs=pack>0?Math.ceil(Math.max(0,qty/pack-1e-9)):0;
     const validPrice=price!==null&&typeof price==="number"&&Number.isFinite(price)&&price>=0;
     // Invalid imported or edited shelf prices are unknown, never negative/NaN
     // values shown as if they were usable prices in the shopping list.
@@ -74,7 +75,7 @@ export function outstandingGroceryEstimate(lines:GroceryLine[],purchasedQuantiti
       unknownCount++;
       continue;
     }
-    knownTotalCents+=Math.ceil(remaining/line.pack)*Math.round(line.price*100);
+    knownTotalCents+=Math.ceil(Math.max(0,remaining/line.pack-1e-9))*Math.round(line.price*100);
   }
   return {knownTotal:Math.round(knownTotalCents)/100,unknownCount};
 }
@@ -172,7 +173,7 @@ export function confirmCheckedGroceryPurchases(
     const previous=typeof purchased[key]==="number"&&Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
     const remaining=Math.max(0,line.qty-previous);
     if(remaining===0||!Number.isFinite(line.pack)||line.pack<=0)continue;
-    purchased[key]=previous+Math.ceil(remaining/line.pack)*line.pack;
+    purchased[key]=previous+Math.ceil(Math.max(0,remaining/line.pack-1e-9))*line.pack;
   }
   return purchased;
 }
