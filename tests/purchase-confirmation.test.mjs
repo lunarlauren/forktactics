@@ -29,3 +29,13 @@ test("fully purchased items are not purchased again",()=>{
 test("legacy name-only checklist keys remain compatible",()=>{
  assert.deepEqual(confirmCheckedGroceryPurchases([line],["Rice"],{}),{"Rice|g":1000});
 });
+
+
+test("fractional package boundaries never confirm an unnecessary extra pack",()=>{
+ const fractional=priceGroceryBasket([{ingredients:[
+  {name:"Spice",unit:"g",qty:0.1,pack:0.3,price:4},
+  {name:"Spice",unit:"g",qty:0.2,pack:0.3,price:4}
+ ]}]).lines[0];
+ assert.equal(fractional.packs,1);
+ assert.deepEqual(confirmCheckedGroceryPurchases([fractional],["Spice|g"],{}),{"Spice|g":0.3});
+});
