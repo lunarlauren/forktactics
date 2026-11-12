@@ -230,7 +230,7 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
   const slots=plan.map((_,i)=>i).filter(i=>!s.locked[i]&&(!preserveChosen||!plan[i]));
   const used=new Set(plan.filter((id,i)=>Boolean(id)&&(s.locked[i]||preserveChosen)));
   const basketFor=(ids:string[])=>priceGroceryBasket(scaleMeals(ids.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),s.household||2),priceSheet,s.pantryQuantities||{});
-  const guaranteedIds=()=>plan.slice(0,shoppingCount).filter(Boolean);
+  const guaranteedIds=()=>shoppingMenuIds(plan,shoppingCount);
   const initialBasket=basketFor(guaranteedIds());
   if(initialBasket.knownTotal>limit)return {next:s,result:"over-budget"};
   if(s.requireKnownPrices&&initialBasket.unknownCount)return {next:s,result:"unknown-prices"};
@@ -243,7 +243,7 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
     const base=guaranteedIds();
     const baseline=basketFor(base);
     const candidateData=candidates.map(recipe=>{
-      const basket=basketFor(i<shoppingCount?[...base,recipe.id]:base);
+      const basket=basketFor(shoppingMenuIds(plan.map((id,index)=>index===i?recipe.id:id),shoppingCount));
       const overlap=new Set(base.flatMap(id=>recipes.find(r=>r.id===id)?.ingredients.map(x=>x.name+"|"+x.unit)||[]));
       const shared=recipe.ingredients.filter(x=>overlap.has(x.name+"|"+x.unit)).length;
       return {recipe,basket,incremental:basket.knownTotal-baseline.knownTotal,shared};
@@ -252,7 +252,7 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
     affordable.sort((a,b)=>{
       // Optional choices are ranked by shared ingredients, not by charging
       // their entire recipe to the guaranteed grocery basket.
-      if(i>=shoppingCount&&a.shared!==b.shared)return b.shared-a.shared;
+      if(base.length>=shoppingCount&&a.shared!==b.shared)return b.shared-a.shared;
       if(a.basket.unknownCount!==b.basket.unknownCount)return a.basket.unknownCount-b.basket.unknownCount;
       const yum=(s.prioritizeYum===false?0:Number((s.likes||[]).includes(b.recipe.id))-Number((s.likes||[]).includes(a.recipe.id)));
       if(mode==="money"&&a.incremental!==b.incremental)return a.incremental-b.incremental;
@@ -271,8 +271,8 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
   // keep the existing menu rather than replacing chosen dinners with blanks.
   // Fill-empty-days remains incremental and may retain successful additions.
   if(!preserveChosen&&slots.some(i=>!plan[i]))return {next:s,result};
-  const nextBasket=priceGroceryBasket(scaleMeals(plan.slice(0,shoppingCount).map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),s.household||2),priceSheet,s.pantryQuantities||{});
-  const previousBasket=priceGroceryBasket(scaleMeals(s.plan.slice(0,shoppingCount).map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),s.household||2),priceSheet,s.pantryQuantities||{});
+  const nextBasket=basketFor(shoppingMenuIds(plan,shoppingCount));
+  const previousBasket=basketFor(shoppingMenuIds(s.plan,shoppingCount));
   const stillChecked=(name:string)=>previousBasket.lines.some(before=>(name===before.name||name===before.name+"|"+before.unit)&&nextBasket.lines.some(after=>after.name===before.name&&after.unit===before.unit&&after.qty===before.qty));
   if(result==="ok"&&nextBasket.unknownCount>0)result="unknown-prices";
   return {next:{...s,plan,checked:s.checked.filter(stillChecked)},result};
