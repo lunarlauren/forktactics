@@ -226,7 +226,9 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
   const priceSheet=s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{};
   const limit=Math.max(0,s.budget);
   const shoppingCount=Math.min(s.shoppingTarget||5,s.plan.length);
-  const plan=[...s.plan];
+  // A full regeneration must not budget against dinners it is about to replace.
+  // Preserve locked choices, and preserve all existing choices in fill-open mode.
+  const plan=s.plan.map((id,i)=>preserveChosen||s.locked[i]?id:"");
   const slots=plan.map((_,i)=>i).filter(i=>!s.locked[i]&&(!preserveChosen||!plan[i]));
   const used=new Set(plan.filter((id,i)=>Boolean(id)&&(s.locked[i]||preserveChosen)));
   const basketFor=(ids:string[])=>priceGroceryBasket(scaleMeals(ids.map(id=>recipes.find(r=>r.id===id)).filter((r):r is Recipe=>Boolean(r)),s.household||2),priceSheet,s.pantryQuantities||{});
