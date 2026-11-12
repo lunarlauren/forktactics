@@ -56,3 +56,14 @@ test("unknown price remains visible when combined quantities require purchases",
   assert.equal(basket.unknownCount,1);
   assert.equal(outstandingGroceryEstimate(basket.lines,{}).unknownCount,1);
 });
+
+
+test("fractional sums at a package boundary do not trigger an extra package",()=>{
+  const basket=priceGroceryBasket([{ingredients:[
+    {name:"Spice",unit:"g",qty:0.1,pack:0.3,price:4},
+    {name:"Spice",unit:"g",qty:0.2,pack:0.3,price:4}
+  ]}]);
+  assert.equal(basket.lines[0].packs,1);
+  assert.equal(basket.knownTotal,4);
+  assert.deepEqual(outstandingGroceryEstimate(basket.lines,{}),{knownTotal:4,unknownCount:0});
+});
