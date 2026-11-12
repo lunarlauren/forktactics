@@ -165,3 +165,30 @@ export function confirmCheckedGroceryPurchases(
   }
   return purchased;
 }
+
+
+/** Approximate recipe ingredient-use cost for comparing menu candidates.
+ * This is not checkout cost: the grocery basket rounds up to whole packs.
+ * Unknown or invalid shelf prices must never make a recipe look cheaper.
+ */
+export function recipeIngredientCostEstimate(
+  recipe:{ingredients:GroceryInput[];servings:number},
+  overrides:Record<string,number|null>={}
+):{cost:number;unknown:number}{
+  let cost=0,unknown=0;
+  const servings=Number.isFinite(recipe.servings)&&recipe.servings>0?recipe.servings:1;
+  for(const item of recipe.ingredients){
+    if(!Number.isFinite(item.qty)||item.qty<0){unknown++;continue;}
+    if(item.qty===0)continue;
+    const key=item.name+"|"+item.unit;
+    const hasPack=Object.prototype.hasOwnProperty.call(overrides,key+"|pack");
+    const pack=hasPack?overrides[key+"|pack"]:item.pack;
+    const hasUnit=Object.prototype.hasOwnProperty.call(overrides,key);
+    const hasLegacy=Object.prototype.hasOwnProperty.call(overrides,item.name);
+    const price=hasUnit?overrides[key]:hasLegacy?overrides[item.name]:pack!==item.pack?null:item.price;
+    if(typeof pack!=="number"||!Number.isFinite(pack)||pack<=0||
+       typeof price!=="number"||!Number.isFinite(price)||price<0){unknown++;continue;}
+    cost+=item.qty/pack*price/servings;
+  }
+  return {cost:Math.round(cost*100)/100,unknown};
+}
