@@ -198,3 +198,17 @@ export function recipeIngredientCostEstimate(
   }
   return {cost:Math.round(cost*100)/100,unknown};
 }
+
+
+/** Count valid completed cooks since the current trip began.
+ * Timestamp offsets must be compared as instants, never lexicographically.
+ */
+export function cooksInCurrentTrip(events:{at:string}[],tripStartedAt:string|null):number{
+  if(!tripStartedAt)return 0;
+  const start=Date.parse(tripStartedAt);
+  if(!Number.isFinite(start))return 0;
+  return events.filter(event=>{
+    const at=typeof event.at==="string"?Date.parse(event.at):NaN;
+    return Number.isFinite(at)&&at>=start;
+  }).length;
+}
