@@ -102,3 +102,14 @@ test("ledger does not mutate purchased, pantry, or cooking history",()=>{
   assert.deepEqual(events,[{recipe:"rice",at:"2026-11-11T18:00:00.000Z"}]);
   assert.deepEqual(result,{"Rice|g":100,"Eggs|each":4});
 });
+
+
+test("malformed event timestamps never consume confirmed inventory",()=>{
+  const events=[
+    {recipe:"rice",at:"not-a-date"},
+    {recipe:"rice",at:""},
+    {recipe:"rice",at:"2026-11-11T18:00:00.000Z"}
+  ];
+  const remaining=remainingConfirmedStock({"Rice|g":500},{},events,"2026-11-11T17:00:00.000Z",requirements);
+  assert.equal(remaining["Rice|g"],300);
+});
