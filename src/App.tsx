@@ -240,29 +240,42 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
   // Explore multiple menu combinations instead of committing to the first
   // affordable dinner. Whole-package costs are nonlinear: two recipes sharing
   // a package can be cheaper together than two individually cheap recipes.
-  type PlanCandidate={plan:string[];used:Set<string>;filled:number;cost:number;unknown:number;yum:number;overlap:number};
-  const evaluate=(ids:string[]):Omit<PlanCandidate,"plan"|"used"|"filled">=>{
+  type PlanMetrics={cost:number;unknown:number;yum:number;overlap:number;categories:number};
+  type PlanCandidate={plan:string[];used:Set<string>;filled:number}&PlanMetrics;
+  const byId=new Map(recipes.map(recipe=>[recipe.id,recipe]));
+  const metricsCache=new Map<string,PlanMetrics>();
+  const evaluate=(ids:string[]):PlanMetrics=>{
+    const key=ids.join("|");
+    const cached=metricsCache.get(key);
+    if(cached)return cached;
     const basket=basketFor(shoppingMenuIds(ids,shoppingCount));
     const chosen=ids.filter(Boolean);
     const yum=chosen.filter(id=>(s.likes||[]).includes(id)).length;
     const counts=new Map<string,number>();
+    const categories=new Set<string>();
     for(const id of chosen){
-      const recipe=recipes.find(r=>r.id===id);
-      for(const item of recipe?.ingredients||[]){
-        const key=item.name+"|"+item.unit;
-        counts.set(key,(counts.get(key)||0)+1);
-      }
+      const recipe=byId.get(id);
+      if(!recipe)continue;
+      categories.add(recipe.category.trim().toLowerCase()||"other");
+      // Count ingredients once per recipe: duplicate lines should not
+      // artificially reward an otherwise repetitive menu.
+      const ingredients=new Set(recipe.ingredients.filter(item=>item.qty>0).map(item=>item.name+"|"+item.unit));
+      for(const key of ingredients)counts.set(key,(counts.get(key)||0)+1);
     }
     const overlap=[...counts.values()].reduce((sum,n)=>sum+Math.max(0,n-1),0);
-    return {cost:basket.knownTotal,unknown:basket.unknownCount,yum,overlap};
+    const metrics={cost:basket.knownTotal,unknown:basket.unknownCount,yum,overlap,categories:categories.size};
+    metricsCache.set(key,metrics);
+    return metrics;
   };
   const score=(candidate:PlanCandidate)=>{
-    // A complete plan always outranks an incomplete one. Missing prices are
-    // penalized rather than silently treated as free groceries.
+    // Money mode rewards whole-basket savings and reusable ingredients.
+    // Variety mode rewards distinct cuisines/categories rather than
+    // accidentally rewarding repetitive ingredient-heavy menus.
     const unknownPenalty=candidate.unknown*1000;
     const yumBonus=s.prioritizeYum===false?0:candidate.yum*(mode==="variety"?8:2);
-    const overlapBonus=candidate.overlap*(mode==="money"?2:0.5);
-    return candidate.filled*100000-unknownPenalty-candidate.cost*(mode==="money"?10:2)+yumBonus+overlapBonus;
+    const diversityBonus=mode==="variety"?candidate.categories*20:0;
+    const overlapBonus=mode==="money"?candidate.overlap*2:0;
+    return candidate.filled*100000-unknownPenalty-candidate.cost*(mode==="money"?10:2)+yumBonus+diversityBonus+overlapBonus;
   };
   const initialMetrics=evaluate(plan);
   let beam:PlanCandidate[]=[{plan,used,filled:0,...initialMetrics}];
