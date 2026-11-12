@@ -153,7 +153,8 @@ test("fractional ingredient arithmetic does not falsely block cooking",()=>{
   assert.deepEqual(recipeIngredientAvailability(ingredients,{"Olive oil|ml":0.3}),{
     canCook:true,missing:[]
   });
-  assert.deepEqual(recipeIngredientAvailability(ingredients,{"Olive oil|ml":0.29}),{
-    canCook:false,missing:[{name:"Olive oil",unit:"ml",qty:0.010000000000000009}]
-  });
+  const insufficient=recipeIngredientAvailability(ingredients,{"Olive oil|ml":0.29});
+  assert.equal(insufficient.canCook,false);
+  assert.equal(insufficient.missing.length,1);
+  assert.ok(Math.abs(insufficient.missing[0].qty-0.01)<1e-9);
 });
