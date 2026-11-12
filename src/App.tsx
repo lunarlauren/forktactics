@@ -1,4 +1,4 @@
-import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds,confirmShoppingCart,retainUnchangedCart,recipeIngredientCostEstimate,cooksInCurrentTrip} from "./planning-adapter";
+import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds,confirmShoppingCart,retainUnchangedCart,recipeIngredientCostEstimate,cooksInCurrentTrip,resetCookingLedger} from "./planning-adapter";
 import Onboarding,{type Setup} from "./Onboarding";
 import React,{useEffect,useMemo,useState} from "react";
 import {ChefHat,CalendarDays,ShoppingBasket,BookOpen,Settings2,Plus,Check,Lock,Unlock,Shuffle,ChevronRight,ArrowLeft,RotateCcw,Download,Upload,Search,Sparkles,Leaf,Wallet,Info,X,Minus,Heart,Clock,Users,CheckCircle2} from "lucide-react";
@@ -232,10 +232,9 @@ function clearCookingHistory(){
  // Freeze the actual remaining stock before removing consumption events.
  // Otherwise deleting events would incorrectly return cooked ingredients to inventory.
  update(current=>{
-  const remaining=remainingConfirmedStock(current.purchasedQuantities||{},current.pantryQuantities||{},current.events,current.tripStartedAt,
-   id=>{const recipe=recipes.find(item=>item.id===id);return recipe?scaleMeals([recipe],current.household||2)[0].ingredients:undefined});
-  const pantry=Object.fromEntries(Object.entries(remaining).filter(([,qty])=>Number.isFinite(qty)&&qty>0.000001).map(([key,qty])=>[key,Math.round(qty*1000000)/1000000]));
-  return {...current,events:[],cooks:{},gift:null,purchasedQuantities:{},pantryQuantities:pantry,tripStartedAt:""};
+  const ledger=resetCookingLedger(current.purchasedQuantities||{},current.pantryQuantities||{},current.events,current.tripStartedAt,
+   id=>{const recipe=recipes.find(item=>item.id===id);return recipe?scaleMeals([recipe],current.household||2)[0].ingredients:undefined},new Date().toISOString());
+  return {...current,...ledger,events:[],cooks:{},gift:null};
  });
  setShowGift(false);setToast("Cooking history cleared. Remaining ingredient stock preserved.");
 }
