@@ -237,37 +237,68 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
   if(initialBasket.knownTotal>limit)return {next:s,result:"over-budget"};
   if(s.requireKnownPrices&&initialBasket.unknownCount)return {next:s,result:"unknown-prices"};
   let result:"ok"|"over-budget"|"unknown-prices"|"not-enough-recipes"="ok";
-  // Fill guaranteed meals first, regardless of which slots are locked.
-  // The shopping basket never includes the optional menu choices.
-  for(const i of slots){
-    const candidates=eligible.filter(recipe=>!used.has(recipe.id));
-    if(!candidates.length){plan[i]="";result="not-enough-recipes";continue;}
-    const base=guaranteedIds();
-    const baseline=basketFor(base);
-    const candidateData=candidates.map(recipe=>{
-      const basket=basketFor(shoppingMenuIds(plan.map((id,index)=>index===i?recipe.id:id),shoppingCount));
-      const overlap=new Set(base.flatMap(id=>recipes.find(r=>r.id===id)?.ingredients.map(x=>x.name+"|"+x.unit)||[]));
-      const shared=recipe.ingredients.filter(x=>overlap.has(x.name+"|"+x.unit)).length;
-      return {recipe,basket,incremental:basket.knownTotal-baseline.knownTotal,shared};
-    });
-    const affordable=candidateData.filter(x=>x.basket.knownTotal<=limit&&(!s.requireKnownPrices||x.basket.unknownCount===0));
-    affordable.sort((a,b)=>{
-      // Optional choices are ranked by shared ingredients, not by charging
-      // their entire recipe to the guaranteed grocery basket.
-      if(base.length>=shoppingCount&&a.shared!==b.shared)return b.shared-a.shared;
-      if(a.basket.unknownCount!==b.basket.unknownCount)return a.basket.unknownCount-b.basket.unknownCount;
-      const yum=(s.prioritizeYum===false?0:Number((s.likes||[]).includes(b.recipe.id))-Number((s.likes||[]).includes(a.recipe.id)));
-      if(mode==="money"&&a.incremental!==b.incremental)return a.incremental-b.incremental;
-      if(yum)return yum;
-      if(a.incremental!==b.incremental)return a.incremental-b.incremental;
-      return a.recipe.name.localeCompare(b.recipe.name);
-    });
-    const best=affordable[0];
-    if(best){plan[i]=best.recipe.id;used.add(best.recipe.id);}
-    else{
-      plan[i]="";
-      if(result!=="not-enough-recipes")result=s.requireKnownPrices&&candidateData.some(x=>x.basket.knownTotal<=limit)?"unknown-prices":"over-budget";
+  // Explore multiple menu combinations instead of committing to the first
+  // affordable dinner. Whole-package costs are nonlinear: two recipes sharing
+  // a package can be cheaper together than two individually cheap recipes.
+  type PlanCandidate={plan:string[];used:Set<string>;filled:number;cost:number;unknown:number;yum:number;overlap:number};
+  const evaluate=(ids:string[]):Omit<PlanCandidate,"plan"|"used"|"filled">=>{
+    const basket=basketFor(shoppingMenuIds(ids,shoppingCount));
+    const chosen=ids.filter(Boolean);
+    const yum=chosen.filter(id=>(s.likes||[]).includes(id)).length;
+    const counts=new Map<string,number>();
+    for(const id of chosen){
+      const recipe=recipes.find(r=>r.id===id);
+      for(const item of recipe?.ingredients||[]){
+        const key=item.name+"|"+item.unit;
+        counts.set(key,(counts.get(key)||0)+1);
+      }
     }
+    const overlap=[...counts.values()].reduce((sum,n)=>sum+Math.max(0,n-1),0);
+    return {cost:basket.knownTotal,unknown:basket.unknownCount,yum,overlap};
+  };
+  const score=(candidate:PlanCandidate)=>{
+    // A complete plan always outranks an incomplete one. Missing prices are
+    // penalized rather than silently treated as free groceries.
+    const unknownPenalty=candidate.unknown*1000;
+    const yumBonus=s.prioritizeYum===false?0:candidate.yum*(mode==="variety"?8:2);
+    const overlapBonus=candidate.overlap*(mode==="money"?2:0.5);
+    return candidate.filled*100000-unknownPenalty-candidate.cost*(mode==="money"?10:2)+yumBonus+overlapBonus;
+  };
+  const initialMetrics=evaluate(plan);
+  let beam:PlanCandidate[]=[{plan,used,filled:0,...initialMetrics}];
+  for(const slot of slots){
+    const expanded:PlanCandidate[]=[];
+    for(const candidate of beam){
+      const available=eligible.filter(recipe=>!candidate.used.has(recipe.id));
+      for(const recipe of available){
+        const proposed=[...candidate.plan];
+        proposed[slot]=recipe.id;
+        const metrics=evaluate(proposed);
+        if(metrics.cost>limit||(s.requireKnownPrices&&metrics.unknown>0))continue;
+        expanded.push({plan:proposed,used:new Set([...candidate.used,recipe.id]),filled:candidate.filled+1,...metrics});
+      }
+      // In fill-empty mode, preserve partial progress when no candidate fits.
+      if(preserveChosen)expanded.push(candidate);
+    }
+    if(!expanded.length){
+      result=eligible.length<=beam[0].used.size?"not-enough-recipes":s.requireKnownPrices?"unknown-prices":"over-budget";
+      break;
+    }
+    expanded.sort((a,b)=>score(b)-score(a)||a.plan.join("|").localeCompare(b.plan.join("|")));
+    // Keep diverse partial combinations; this is bounded for mobile devices.
+    const distinct=new Set<string>();
+    beam=expanded.filter(candidate=>{
+      const key=candidate.plan.join("|");
+      if(distinct.has(key))return false;
+      distinct.add(key);
+      return true;
+    }).slice(0,16);
+  }
+  beam.sort((a,b)=>score(b)-score(a));
+  const chosen=beam[0];
+  if(chosen){
+    for(let i=0;i<plan.length;i++)plan[i]=chosen.plan[i];
+    if(chosen.filled<slots.length&&result==="ok")result="not-enough-recipes";
   }
   // Full-week generation is transactional: if any flexible day cannot be filled,
   // keep the existing menu rather than replacing chosen dinners with blanks.
