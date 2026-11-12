@@ -223,3 +223,16 @@ test("extra packages purchased at checkout remain available across cooking and t
   const afterNext=remainingConfirmedStock(reset.purchasedQuantities,reset.pantryQuantities,[nextCook],reset.tripStartedAt,()=>undefined);
   assert.equal(afterNext["Soy sauce|mL"],220);
 });
+
+test("cart selection alone never creates stock, and confirming extra packages adds only selected quantities",()=>{
+  const meal={ingredients:[{name:"Rice",unit:"g",qty:250,pack:500,price:3}]};
+  const lines=priceGroceryBasket([meal]).lines;
+  const alreadyPurchased={"Rice|g":500};
+  const pending={"Rice|g":2};
+  assert.equal(recipeIngredientAvailability([{name:"Rice",unit:"g",qty:750}],alreadyPurchased).canCook,false);
+  const checkedOut=confirmShoppingCart(lines,[],pending,alreadyPurchased);
+  assert.equal(checkedOut["Rice|g"],1500);
+  assert.equal(recipeIngredientAvailability([{name:"Rice",unit:"g",qty:750}],checkedOut).canCook,true);
+  assert.deepEqual(alreadyPurchased,{"Rice|g":500});
+  assert.deepEqual(pending,{"Rice|g":2});
+});
