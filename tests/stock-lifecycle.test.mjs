@@ -134,10 +134,10 @@ test("invalid trip boundaries do not accidentally debit historical stock",()=>{
 
 test("trip cook count handles offsets, malformed dates, and earlier events",()=>{
  const events=[
-  {at:"2026-11-11T19:30:00+02:00"},
-  {at:"2026-11-11T13:30:00-05:00"},
-  {at:"bad-timestamp"},
-  {at:"2026-11-11T18:30:00Z"}
+  {recipe:"rice",at:"2026-11-11T19:30:00+02:00"},
+  {recipe:"rice",at:"2026-11-11T13:30:00-05:00"},
+  {recipe:"rice",at:"bad-timestamp"},
+  {recipe:"rice",at:"2026-11-11T18:30:00Z"}
  ];
  assert.equal(cooksInCurrentTrip(events,"2026-11-11T18:00:00Z"),2);
  assert.equal(cooksInCurrentTrip(events,"invalid"),0);
@@ -161,7 +161,7 @@ test("fractional ingredient arithmetic does not falsely block cooking",()=>{
 
 
 test("corrupted null cooking events do not crash trip forecasts",()=>{
-  const events=[null,{at:"2026-11-11T18:30:00Z"}];
+  const events=[null,{recipe:"rice",at:"2026-11-11T18:30:00Z"},{at:"2026-11-11T18:40:00Z"},{recipe:"",at:"2026-11-11T18:50:00Z"}];
   assert.equal(cooksInCurrentTrip(events,"2026-11-11T18:00:00Z"),1);
 });
 
