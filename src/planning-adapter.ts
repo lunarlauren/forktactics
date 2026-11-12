@@ -244,3 +244,23 @@ export function confirmShoppingCart(
  }
  return purchased;
 }
+
+/** Keep pending cart selections only when a regenerated menu needs the same
+ * ingredient quantity and package size. Confirmed inventory is unaffected.
+ */
+export function retainUnchangedCart(
+ before:GroceryLine[],
+ after:GroceryLine[],
+ cart:Record<string,number>
+):Record<string,number>{
+ const next=new Map(after.map(line=>[line.name+"|"+line.unit,line]));
+ const kept:Record<string,number>={};
+ for(const line of before){
+  const key=line.name+"|"+line.unit;
+  const replacement=next.get(key);
+  const count=cart[key];
+  if(replacement&&replacement.qty===line.qty&&replacement.pack===line.pack&&
+     Number.isInteger(count)&&count>=0)kept[key]=count;
+ }
+ return kept;
+}
