@@ -6,12 +6,12 @@ import {tmpdir} from "node:os";
 import {pathToFileURL} from "node:url";
 
 const dir=mkdtempSync(join(tmpdir(),"forktactics-journey-"));
-let shoppingMenuIds,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability;
+let shoppingMenuIds,retainUnchangedCart,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability;
 try{
   const source=readFileSync(new URL("../src/planning-adapter.ts",import.meta.url),"utf8");
   const path=join(dir,"planning-adapter.mts");
   writeFileSync(path,source);
-  ({shoppingMenuIds,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability}=await import(pathToFileURL(path).href));
+  ({shoppingMenuIds,retainUnchangedCart,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability}=await import(pathToFileURL(path).href));
 }finally{rmSync(dir,{recursive:true,force:true});}
 
 test("empty slots, checkout, cooking, and leftovers work as one grocery trip",()=>{
@@ -144,4 +144,20 @@ test("zero cart selection overrides stale checked state and extra packages persi
  assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{"Rice|g":0},{}),{});
  assert.deepEqual(confirmShoppingCart(lines,[],{"Rice|g":3},{"Rice|g":500}),{"Rice|g":2000});
  assert.deepEqual(confirmShoppingCart(lines,[],{},{"Rice|g":500}),{"Rice|g":500});
+});
+
+test("regenerating meals retains cart quantities only for unchanged grocery lines",()=>{
+ const before=priceGroceryBasket([{ingredients:[
+  {name:"Rice",unit:"g",qty:250,pack:500,price:3},
+  {name:"Beans",unit:"g",qty:400,pack:400,price:2},
+  {name:"Eggs",unit:"each",qty:2,pack:6,price:2}
+ ]}]).lines;
+ const after=priceGroceryBasket([{ingredients:[
+  {name:"Rice",unit:"g",qty:250,pack:500,price:3},
+  {name:"Beans",unit:"g",qty:800,pack:400,price:2},
+  {name:"Eggs",unit:"each",qty:2,pack:12,price:4}
+ ]}]).lines;
+ const cart={"Rice|g":0,"Beans|g":2,"Eggs|each":1,"Old|each":5};
+ assert.deepEqual(retainUnchangedCart(before,after,cart),{"Rice|g":0});
+ assert.deepEqual(cart,{"Rice|g":0,"Beans|g":2,"Eggs|each":1,"Old|each":5});
 });
