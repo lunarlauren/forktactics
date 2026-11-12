@@ -6,12 +6,12 @@ import {tmpdir} from "node:os";
 import {pathToFileURL} from "node:url";
 
 const dir=mkdtempSync(join(tmpdir(),"forktactics-journey-"));
-let shoppingMenuIds,priceGroceryBasket,confirmCheckedGroceryPurchases,remainingConfirmedStock,recipeIngredientAvailability;
+let shoppingMenuIds,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability;
 try{
   const source=readFileSync(new URL("../src/planning-adapter.ts",import.meta.url),"utf8");
   const path=join(dir,"planning-adapter.mts");
   writeFileSync(path,source);
-  ({shoppingMenuIds,priceGroceryBasket,confirmCheckedGroceryPurchases,remainingConfirmedStock,recipeIngredientAvailability}=await import(pathToFileURL(path).href));
+  ({shoppingMenuIds,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability}=await import(pathToFileURL(path).href));
 }finally{rmSync(dir,{recursive:true,force:true});}
 
 test("empty slots, checkout, cooking, and leftovers work as one grocery trip",()=>{
@@ -86,4 +86,25 @@ test("new trip carries remaining quantities without double-counting old cooks",(
   const carried=Object.fromEntries(Object.entries(remaining).filter(([,qty])=>qty>0));
   const next=remainingConfirmedStock({},carried,events,null,()=>undefined);
   assert.deepEqual(next,{"Rice|g":300,"Eggs|each":4});
+});
+
+test("cart package quantities are committed only at confirmation",()=>{
+ const recipes=[
+  {ingredients:[{name:"Black beans",unit:"g",qty:400,pack:400,price:1.29}]},
+  {ingredients:[{name:"Bell pepper",unit:"each",qty:3,pack:1,price:1.29}]}
+ ];
+ const basket=priceGroceryBasket(recipes).lines;
+ const selected={"Black beans|g":2,"Bell pepper|each":0};
+ const purchased=confirmShoppingCart(basket,[],selected,{});
+ assert.deepEqual(purchased,{"Black beans|g":800});
+ assert.deepEqual(selected,{"Black beans|g":2,"Bell pepper|each":0});
+ const events=[{recipe:"burgers",at:"2026-11-12T13:00:00Z",ingredients:[{name:"Black beans",unit:"g",qty:400}]}];
+ const remaining=remainingConfirmedStock(purchased,{},events,"2026-11-12T12:00:00Z",()=>undefined);
+ assert.equal(remaining["Black beans|g"],400);
+ assert.equal(recipeIngredientAvailability([{name:"Black beans",unit:"g",qty:400}],remaining).canCook,true);
+});
+test("legacy checked groceries still work with empty cart quantities",()=>{
+ const basket=priceGroceryBasket([{ingredients:[{name:"Rice",unit:"g",qty:250,pack:500,price:3}]}]).lines;
+ assert.deepEqual(confirmShoppingCart(basket,["Rice|g"],{},{}),{"Rice|g":500});
+ assert.deepEqual(confirmShoppingCart(basket,["Rice|g"],{"Rice|g":0},{}),{});
 });
