@@ -143,3 +143,17 @@ test("trip cook count handles offsets, malformed dates, and earlier events",()=>
  assert.equal(cooksInCurrentTrip(events,"invalid"),0);
  assert.equal(cooksInCurrentTrip(events,null),0);
 });
+
+
+test("fractional ingredient arithmetic does not falsely block cooking",()=>{
+  const ingredients=[
+    {name:"Olive oil",unit:"ml",qty:0.1},
+    {name:"Olive oil",unit:"ml",qty:0.2}
+  ];
+  assert.deepEqual(recipeIngredientAvailability(ingredients,{"Olive oil|ml":0.3}),{
+    canCook:true,missing:[]
+  });
+  assert.deepEqual(recipeIngredientAvailability(ingredients,{"Olive oil|ml":0.29}),{
+    canCook:false,missing:[{name:"Olive oil",unit:"ml",qty:0.010000000000000009}]
+  });
+});
