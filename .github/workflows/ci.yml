@@ -22,6 +22,10 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Run regression tests
+        id: tests
         run: npm test
+      # Diagnose build failures independently; a failed test must not hide
+      # whether the app also fails to compile. The job still fails if tests fail.
       - name: Build production app
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
         run: npm run build
