@@ -78,3 +78,30 @@ export function outstandingGroceryEstimate(lines:GroceryLine[],purchasedQuantiti
   }
   return {knownTotal:Math.round(knownTotalCents)/100,unknownCount};
 }
+
+
+/** Read-only cookability check against confirmed stock, never shopping checkmarks.
+ * Duplicate ingredient entries are consolidated before comparing with inventory.
+ * Missing quantities are expressed in the recipe's own units.
+ */
+export function recipeIngredientAvailability(
+  ingredients:Pick<GroceryInput,"name"|"unit"|"qty">[],
+  inventory:Record<string,number>={}
+):{canCook:boolean;missing:{name:string;unit:string;qty:number}[]}{
+  const required=new Map<string,{name:string;unit:string;qty:number}>();
+  for(const item of ingredients){
+    if(!Number.isFinite(item.qty)||item.qty<0)throw new Error("Invalid recipe quantity for "+item.name);
+    if(item.qty===0)continue;
+    const key=item.name+"|"+item.unit;
+    const previous=required.get(key);
+    required.set(key,{name:item.name,unit:item.unit,qty:(previous?.qty??0)+item.qty});
+  }
+  const missing:Array<{name:string;unit:string;qty:number}>=[];
+  for(const [key,item] of required){
+    const recorded=inventory[key];
+    const available=typeof recorded==="number"&&Number.isFinite(recorded)&&recorded>0?recorded:0;
+    const shortfall=Math.max(0,item.qty-available);
+    if(shortfall>0)missing.push({name:item.name,unit:item.unit,qty:shortfall});
+  }
+  return {canCook:missing.length===0,missing};
+}
