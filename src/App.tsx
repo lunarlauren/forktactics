@@ -95,7 +95,16 @@ const missingFor=(r:Recipe)=>recipeIngredientAvailability(scaleMeals([r],state.h
 // Every menu option can be cooked at most once in a suggested lineup.
 const forecastAfter=(selectedRecipe:Recipe)=>{
  const remaining=new Map(stock);
- const requirements=(recipe:Recipe)=>scaleMeals([recipe],state.household||2)[0].ingredients.filter(x=>x.qty>0).map(x=>({key:x.name+"|"+x.unit,qty:x.qty}));
+ // Aggregate repeated ingredient lines before testing a proposed menu.
+ const requirements=(recipe:Recipe)=>{
+   const totals=new Map<string,number>();
+   for(const item of scaleMeals([recipe],state.household||2)[0].ingredients){
+     if(!Number.isFinite(item.qty)||item.qty<=0)continue;
+     const key=item.name+"|"+item.unit;
+     totals.set(key,(totals.get(key)||0)+item.qty);
+   }
+   return Array.from(totals,([key,qty])=>({key,qty}));
+ };
  const deduct=(req:{key:string;qty:number}[])=>{for(const x of req)remaining.set(x.key,(remaining.get(x.key)||0)-x.qty)};
  const selectedReq=requirements(selectedRecipe);
  if(selectedReq.some(x=>(remaining.get(x.key)||0)+1e-6<x.qty))return {lineup:[] as Recipe[],possible:false,needed:0};
