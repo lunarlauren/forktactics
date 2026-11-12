@@ -11,7 +11,7 @@ import {pathToFileURL} from "node:url";
 const dir=mkdtempSync(join(tmpdir(),"forktactics-stock-"));
 const source=readFileSync(new URL("../src/planning-adapter.ts",import.meta.url),"utf8");
 writeFileSync(join(dir,"planning-adapter.mts"),source);
-const {recipeIngredientAvailability,remainingConfirmedStock}=await import(pathToFileURL(join(dir,"planning-adapter.mts")).href);
+const {recipeIngredientAvailability,remainingConfirmedStock,cooksInCurrentTrip}=await import(pathToFileURL(join(dir,"planning-adapter.mts")).href);
 rmSync(dir,{recursive:true,force:true});
 
 test("shared stock cannot cover two consecutive meals without replenishment",()=>{
@@ -130,4 +130,16 @@ test("invalid trip boundaries do not accidentally debit historical stock",()=>{
     {recipe:"rice",at:"2026-11-11T18:30:00Z"}
   ],"invalid-trip-date",requirements);
   assert.equal(remaining["Rice|g"],500);
+});
+
+test("trip cook count handles offsets, malformed dates, and earlier events",()=>{
+ const events=[
+  {at:"2026-11-11T19:30:00+02:00"},
+  {at:"2026-11-11T13:30:00-05:00"},
+  {at:"bad-timestamp"},
+  {at:"2026-11-11T18:30:00Z"}
+ ];
+ assert.equal(cooksInCurrentTrip(events,"2026-11-11T18:00:00Z"),2);
+ assert.equal(cooksInCurrentTrip(events,"invalid"),0);
+ assert.equal(cooksInCurrentTrip(events,null),0);
 });
