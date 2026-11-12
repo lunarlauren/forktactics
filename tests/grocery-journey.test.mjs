@@ -130,7 +130,7 @@ test("two cans of beans keep fajitas available after cooking burgers",()=>{
  assert.equal(recipeIngredientAvailability(fajitas.ingredients,stock).canCook,true);
  const second=remainingConfirmedStock(purchased,{},[...events,{recipe:"veggie-fajitas",at:"2026-11-12T14:00:00Z",ingredients:fajitas.ingredients.map(({name,unit,qty})=>({name,unit,qty}))}],"2026-11-12T12:00:00Z",()=>undefined);
  assert.equal(recipeIngredientAvailability(fajitas.ingredients,second).canCook,false);
- assert.deepEqual(recipeIngredientAvailability(fajitas.ingredients,second).missing,[{name:"Black beans",unit:"g",qty:400},{name:"Bell pepper",unit:"each",qty:3}]);
+ assert.deepEqual(recipeIngredientAvailability(fajitas.ingredients,second).missing,[{name:"Black beans",unit:"g",qty:400},{name:"Bell pepper",unit:"each",qty:3},{name:"Tortillas",unit:"each",qty:2}]);
 });
 test("one can of beans correctly blocks the other recipe after burgers",()=>{
  const ingredients=[{name:"Black beans",unit:"g",qty:400,pack:400,price:1.29}];
