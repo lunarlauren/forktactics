@@ -122,10 +122,14 @@ export function remainingConfirmedStock(
     if(typeof qty==="number"&&Number.isFinite(qty)&&qty>0)remaining[key]=(remaining[key]||0)+qty;
   }
   if(!tripStartedAt)return remaining;
+  const tripStartMs=Date.parse(tripStartedAt);
+  // An invalid trip boundary cannot safely classify historical cooks.
+  if(!Number.isFinite(tripStartMs))return remaining;
   for(const event of events){
-    // Ignore malformed timestamps rather than debiting the wrong trip.
-    if(typeof event.at!=="string"||!Number.isFinite(Date.parse(event.at)))continue;
-    if(event.at<tripStartedAt)continue;
+    // Compare instants, not timestamp strings: equivalent times can use
+    // different timezone offsets or fractional-second precision.
+    const eventMs=typeof event.at==="string"?Date.parse(event.at):NaN;
+    if(!Number.isFinite(eventMs)||eventMs<tripStartMs)continue;
     const ingredients=requirements(event.recipe);
     if(!ingredients)continue;
     for(const item of ingredients){
