@@ -264,3 +264,22 @@ export function retainUnchangedCart(
  }
  return kept;
 }
+
+/** Clear cooking events while preserving the inventory that actually remains.
+ * Start a new consumption epoch so future cooks still subtract ingredients.
+ * Existing purchases become carried pantry stock, not new purchases.
+ */
+export function resetCookingLedger(
+ purchased:Record<string,number>,
+ pantry:Record<string,number>,
+ events:{recipe:string;at:string;ingredients?:Pick<GroceryInput,"name"|"unit"|"qty">[]}[],
+ tripStartedAt:string|null,
+ requirements:(recipeId:string)=>Pick<GroceryInput,"name"|"unit"|"qty">[]|undefined,
+ resetAt:string
+):{pantryQuantities:Record<string,number>;purchasedQuantities:Record<string,number>;tripStartedAt:string}{
+ const remaining=remainingConfirmedStock(purchased,pantry,events,tripStartedAt,requirements);
+ const pantryQuantities=Object.fromEntries(Object.entries(remaining)
+  .filter(([,qty])=>Number.isFinite(qty)&&qty>0.000001)
+  .map(([key,qty])=>[key,Math.round(qty*1000000)/1000000]));
+ return {pantryQuantities,purchasedQuantities:{},tripStartedAt:resetAt};
+}
