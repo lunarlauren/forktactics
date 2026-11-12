@@ -128,9 +128,12 @@ export function remainingConfirmedStock(
   // An invalid trip boundary cannot safely classify historical cooks.
   if(!Number.isFinite(tripStartMs))return remaining;
   for(const event of events){
+    // Imported histories may contain null entries. Ignore them rather than
+    // crashing the pantry ledger and making the Tonight menu unusable.
+    if(!event||typeof event.at!=="string"||typeof event.recipe!=="string")continue;
     // Compare instants, not timestamp strings: equivalent times can use
     // different timezone offsets or fractional-second precision.
-    const eventMs=typeof event.at==="string"?Date.parse(event.at):NaN;
+    const eventMs=Date.parse(event.at);
     if(!Number.isFinite(eventMs)||eventMs<tripStartMs)continue;
     const ingredients=requirements(event.recipe);
     if(!ingredients)continue;
