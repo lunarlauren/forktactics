@@ -1,4 +1,4 @@
-import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds} from "./planning-adapter";
+import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds,confirmCheckedGroceryPurchases} from "./planning-adapter";
 import Onboarding,{type Setup} from "./Onboarding";
 import React,{useEffect,useMemo,useState} from "react";
 import {ChefHat,CalendarDays,ShoppingBasket,BookOpen,Settings2,Plus,Check,Lock,Unlock,Shuffle,ChevronRight,ArrowLeft,RotateCcw,Download,Upload,Search,Sparkles,Leaf,Wallet,Info,X,Minus,Heart,Clock,Users,CheckCircle2} from "lucide-react";
@@ -311,15 +311,7 @@ return <div className="app">{!state.onboarded&&<Onboarding recipes={recipes} onC
  update(s=>({...s,plan:Array(s.mealTarget||7).fill(""),locked:Array(s.mealTarget||7).fill(false),confirmedPlan:"",tripStartedAt:"",checked:[],purchasedQuantities:{},restockQueue:[],pantryQuantities:carried}));
  setTab("Tonight");setSelected(null);setToast("New week started. Unused ingredients carried into your pantry.");
 }}><RotateCcw size={16}/> Start new shopping week</button>{state.plan.some(Boolean)&&<button className="primary full" onClick={()=>{update(s=>{
- const purchased={...(s.purchasedQuantities||{})};
- // Finalize only checked lines from the basket displayed at confirmation.
- // Explicit partial purchases are retained; confirmation never invents
- // purchases for unchecked items.
- for(const line of basket){
-  const key=line.name+"|"+line.unit;
-  const checked=s.checked.includes(key)||(s.checked.includes(line.name)&&basket.filter(x=>x.name===line.name).length===1);
-  if(checked)purchased[key]=Math.max(purchased[key]||0,line.packs*line.pack);
- }
+ const purchased=confirmCheckedGroceryPurchases(basket,s.checked,s.purchasedQuantities||{});
  return {...s,purchasedQuantities:purchased,checked:[],confirmedPlan:s.plan.join("|")+"#"+(s.shoppingTarget||5),tripStartedAt:s.tripStartedAt||new Date().toISOString()};
 });setTab("Tonight");setToast("Menu confirmed. Checked groceries were recorded as purchased; unchecked items remain missing.")}}><Check size={16}/> Confirm shopping list & open menu</button>}</div></div></>}
 {tab==="Packs"&&<><div className="section-intro compact"><span className="eyebrow accent">RECIPE DISCOVERY</span><h1>Explore <em>recipe packs.</em></h1><p>Choose a cuisine or theme, browse its meals, and rate them Yum or Yuck. Your weekly plan stays empty until you choose dinners.</p></div><div className="toolbar"><button className="primary" onClick={openRatings}><Heart size={16}/> Yum / Yuck recipes</button><button className="secondary" onClick={()=>addRecipe()}><Plus size={16}/> Add your own recipe</button></div><div className="pack-gallery">{recipePacks.map(pack=>{const rated=pack.ids.filter(id=>(state.likes||[]).includes(id)||(state.dislikes||[]).includes(id)).length;const opened=(state.openedPacks||[]).includes(pack.id);return <button key={pack.id} className="pack-gallery-card" onClick={()=>ripPack(pack.id)}><span className="pack-gallery-topline"><span>FORKTACTICS · RECIPE SERIES</span><span>{opened?"IN COLLECTION":"NEW DISCOVERY"}</span></span><span className="pack-gallery-art" aria-hidden="true"><span className="pack-gallery-halo"></span><span className="pack-gallery-emoji">{pack.emoji}</span><span className="pack-gallery-sparkle">✦</span></span><span className="pack-gallery-copy"><strong>{pack.name}</strong><small>{pack.description}</small><small>{pack.ids.length} recipe cards · {rated} rated</small></span><span className="pack-gallery-action">{opened?"Review cards":"Open pack"} <ChevronRight size={16}/></span></button>})}</div></>}
