@@ -210,7 +210,8 @@ export function cooksInCurrentTrip(events:{at:string}[],tripStartedAt:string|nul
   const start=Date.parse(tripStartedAt);
   if(!Number.isFinite(start))return 0;
   return events.filter(event=>{
-    const at=typeof event.at==="string"?Date.parse(event.at):NaN;
+    if(!event||typeof event.at!=="string")return false;
+    const at=Date.parse(event.at);
     return Number.isFinite(at)&&at>=start;
   }).length;
 }
