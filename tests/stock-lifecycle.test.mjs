@@ -164,3 +164,15 @@ test("corrupted null cooking events do not crash trip forecasts",()=>{
   const events=[null,{at:"2026-11-11T18:30:00Z"}];
   assert.equal(cooksInCurrentTrip(events,"2026-11-11T18:00:00Z"),1);
 });
+
+
+test("corrupted cooking history cannot crash or consume unrelated pantry stock",()=>{
+  const events=[
+    null,
+    {recipe:"rice",at:null},
+    {recipe:null,at:"2026-11-11T18:30:00Z"},
+    {recipe:"rice",at:"2026-11-11T18:30:00Z"}
+  ];
+  const remaining=remainingConfirmedStock({"Rice|g":500},{"Eggs|each":6},events,"2026-11-11T18:00:00Z",requirements);
+  assert.deepEqual(remaining,{"Rice|g":300,"Eggs|each":6});
+});
