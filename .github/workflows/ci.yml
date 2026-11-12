@@ -20,6 +20,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install dependencies
+        id: install
         run: npm install --no-audit --no-fund
       - name: Run regression tests
         id: tests
@@ -28,6 +29,7 @@ jobs:
           set -o pipefail
           npm test 2>&1 | tee regression-tests.log
       - name: Typecheck application
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         id: typecheck
         shell: bash
         run: |
@@ -35,7 +37,7 @@ jobs:
           npm run typecheck 2>&1 | tee typecheck.log
       - name: Build production app
         id: build
-        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         shell: bash
         run: |
           set -o pipefail
@@ -53,6 +55,10 @@ jobs:
             echo '### Test output (last 80 lines)'
             echo '~~~'
             if [ -f regression-tests.log ]; then tail -n 80 regression-tests.log; else echo 'Tests did not run'; fi
+            echo '~~~'
+            echo '### TypeScript output (last 60 lines)'
+            echo '~~~'
+            if [ -f typecheck.log ]; then tail -n 60 typecheck.log; else echo 'Typecheck did not run'; fi
             echo '~~~'
             echo '### Build output (last 40 lines)'
             echo '~~~'
