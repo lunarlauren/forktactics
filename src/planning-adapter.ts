@@ -100,8 +100,10 @@ export function recipeIngredientAvailability(
   for(const [key,item] of required){
     const recorded=inventory[key];
     const available=typeof recorded==="number"&&Number.isFinite(recorded)&&recorded>0?recorded:0;
+    // Recipe quantities may be fractional (e.g. 0.1 + 0.2). Do not
+    // block cooking because of sub-micro-unit floating-point noise.
     const shortfall=Math.max(0,item.qty-available);
-    if(shortfall>0)missing.push({name:item.name,unit:item.unit,qty:shortfall});
+    if(shortfall>1e-6)missing.push({name:item.name,unit:item.unit,qty:shortfall});
   }
   return {canCook:missing.length===0,missing};
 }
