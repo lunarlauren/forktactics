@@ -221,3 +221,26 @@ export function cooksInCurrentTrip(events:{recipe:string;at:string}[],tripStarte
     return Number.isFinite(at)&&at>=start;
   }).length;
 }
+
+/** Commit explicitly selected package counts; fall back to legacy checked lines.
+ * Package counts are shopping-cart selections, never inventory before checkout.
+ */
+export function confirmShoppingCart(
+ lines:GroceryLine[],
+ checked:string[],
+ selectedPackages:Record<string,number>,
+ existing:Record<string,number>={}
+):Record<string,number>{
+ const purchased={...existing};
+ for(const line of lines){
+  const key=line.name+"|"+line.unit;
+  const uniqueName=lines.filter(item=>item.name===line.name).length===1;
+  const selected=selectedPackages[key];
+  const checkedLine=checked.includes(key)||(uniqueName&&checked.includes(line.name));
+  const previous=Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
+  const defaultPacks=line.pack>0?Math.ceil(Math.max(0,line.qty-previous)/line.pack-1e-9):0;
+  const count=typeof selected==="number"&&Number.isInteger(selected)&&selected>=0?selected:checkedLine?defaultPacks:0;
+  if(count>0&&Number.isFinite(line.pack)&&line.pack>0)purchased[key]=previous+count*line.pack;
+ }
+ return purchased;
+}
