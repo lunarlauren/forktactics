@@ -143,3 +143,25 @@ export function shoppingMenuIds(plan:string[],target:number):string[]{
   const count=Number.isFinite(target)?Math.max(0,Math.floor(target)):0;
   return plan.filter(id=>typeof id==="string"&&id.trim().length>0).slice(0,count);
 }
+
+
+/** Confirm checked grocery lines as purchases of the remaining whole packs.
+ * Already recorded purchases must not be replaced by the original basket total.
+ */
+export function confirmCheckedGroceryPurchases(
+  lines:GroceryLine[],
+  checked:string[],
+  existing:Record<string,number>={}
+):Record<string,number>{
+  const purchased={...existing};
+  for(const line of lines){
+    const key=line.name+"|"+line.unit;
+    const uniqueName=lines.filter(item=>item.name===line.name).length===1;
+    if(!checked.includes(key)&&!(uniqueName&&checked.includes(line.name)))continue;
+    const previous=typeof purchased[key]==="number"&&Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
+    const remaining=Math.max(0,line.qty-previous);
+    if(remaining===0||!Number.isFinite(line.pack)||line.pack<=0)continue;
+    purchased[key]=previous+Math.ceil(remaining/line.pack)*line.pack;
+  }
+  return purchased;
+}
