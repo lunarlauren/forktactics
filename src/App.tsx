@@ -1,4 +1,4 @@
-import {priceGroceryBasket,outstandingGroceryEstimate} from "./planning-adapter";
+import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability} from "./planning-adapter";
 import Onboarding,{type Setup} from "./Onboarding";
 import React,{useEffect,useMemo,useState} from "react";
 import {ChefHat,CalendarDays,ShoppingBasket,BookOpen,Settings2,Plus,Check,Lock,Unlock,Shuffle,ChevronRight,ArrowLeft,RotateCcw,Download,Upload,Search,Sparkles,Leaf,Wallet,Info,X,Minus,Heart,Clock,Users,CheckCircle2} from "lucide-react";
@@ -115,7 +115,7 @@ const stock=useMemo(()=>{
  }
  return available;
 },[basket,state.purchasedQuantities,state.pantryQuantities,state.checked,state.events,state.tripStartedAt,state.restockQueue,recipes,state.household]);
-const missingFor=(r:Recipe)=>scaleMeals([r],state.household||2)[0].ingredients.filter(i=>i.qty>0&&(stock.get(i.name+"|"+i.unit)||0)+0.000001<i.qty).map(i=>i.name);
+const missingFor=(r:Recipe)=>recipeIngredientAvailability(scaleMeals([r],state.household||2)[0].ingredients,Object.fromEntries(stock)).missing.map(i=>`${i.name} (${Number(i.qty.toFixed(3))} ${i.unit})`);
 // Evaluate combinations against the same finite stock, not each dinner independently.
 // Every menu option can be cooked at most once in a suggested lineup.
 const forecastAfter=(selectedRecipe:Recipe)=>{
