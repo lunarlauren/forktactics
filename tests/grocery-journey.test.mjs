@@ -108,3 +108,40 @@ test("legacy checked groceries still work with empty cart quantities",()=>{
  assert.deepEqual(confirmShoppingCart(basket,["Rice|g"],{},{}),{"Rice|g":500});
  assert.deepEqual(confirmShoppingCart(basket,["Rice|g"],{"Rice|g":0},{}),{});
 });
+
+test("two cans of beans keep fajitas available after cooking burgers",()=>{
+ const burger={ingredients:[
+  {name:"Black beans",unit:"g",qty:400,pack:400,price:1.29},
+  {name:"Breadcrumbs",unit:"g",qty:100,pack:400,price:2.29},
+  {name:"Burger buns",unit:"each",qty:4,pack:6,price:2.49}
+ ]};
+ const fajitas={ingredients:[
+  {name:"Black beans",unit:"g",qty:400,pack:400,price:1.29},
+  {name:"Bell pepper",unit:"each",qty:3,pack:1,price:1.29},
+  {name:"Tortillas",unit:"each",qty:6,pack:10,price:2.99}
+ ]};
+ const basket=priceGroceryBasket([burger,fajitas]).lines;
+ const cart=Object.fromEntries(basket.map(line=>[line.name+"|"+line.unit,line.packs]));
+ const purchased=confirmShoppingCart(basket,[],cart,{});
+ assert.equal(purchased["Black beans|g"],800);
+ const events=[{recipe:"black-bean-burgers",at:"2026-11-12T13:00:00Z",ingredients:burger.ingredients.map(({name,unit,qty})=>({name,unit,qty}))}];
+ const stock=remainingConfirmedStock(purchased,{},events,"2026-11-12T12:00:00Z",()=>undefined);
+ assert.equal(stock["Black beans|g"],400);
+ assert.equal(recipeIngredientAvailability(fajitas.ingredients,stock).canCook,true);
+ const second=remainingConfirmedStock(purchased,{},[...events,{recipe:"veggie-fajitas",at:"2026-11-12T14:00:00Z",ingredients:fajitas.ingredients.map(({name,unit,qty})=>({name,unit,qty}))}],"2026-11-12T12:00:00Z",()=>undefined);
+ assert.equal(recipeIngredientAvailability(fajitas.ingredients,second).canCook,false);
+ assert.deepEqual(recipeIngredientAvailability(fajitas.ingredients,second).missing,[{name:"Black beans",unit:"g",qty:400},{name:"Bell pepper",unit:"each",qty:3},{name:"Tortillas",unit:"each",qty:6}]);
+});
+test("one can of beans correctly blocks the other recipe after burgers",()=>{
+ const ingredients=[{name:"Black beans",unit:"g",qty:400,pack:400,price:1.29}];
+ const basket=priceGroceryBasket([{ingredients}]).lines;
+ const purchased=confirmShoppingCart(basket,[],{"Black beans|g":1},{});
+ const stock=remainingConfirmedStock(purchased,{},[{recipe:"burgers",at:"2026-11-12T13:00:00Z",ingredients:[{name:"Black beans",unit:"g",qty:400}]}],"2026-11-12T12:00:00Z",()=>undefined);
+ assert.deepEqual(recipeIngredientAvailability(ingredients,stock).missing,[{name:"Black beans",unit:"g",qty:400}]);
+});
+test("zero cart selection overrides stale checked state and extra packages persist",()=>{
+ const lines=priceGroceryBasket([{ingredients:[{name:"Rice",unit:"g",qty:250,pack:500,price:3}]}]).lines;
+ assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{"Rice|g":0},{}),{});
+ assert.deepEqual(confirmShoppingCart(lines,[],{"Rice|g":3},{"Rice|g":500}),{"Rice|g":2000});
+ assert.deepEqual(confirmShoppingCart(lines,[],{},{"Rice|g":500}),{"Rice|g":500});
+});
