@@ -43,3 +43,47 @@ test("empty slots, checkout, cooking, and leftovers work as one grocery trip",()
   const newTrip=remainingConfirmedStock({},carried,events,null,id=>recipes[id]?.ingredients);
   assert.deepEqual(newTrip,{"Rice|g":200,"Eggs|each":6});
 });
+
+test("partial checkout only unlocks meals with enough confirmed ingredients",()=>{
+  const recipes={
+    stirFry:[{name:"Rice",unit:"g",qty:200,pack:500,price:3},{name:"Chicken",unit:"g",qty:300,pack:500,price:6}],
+    riceBowl:[{name:"Rice",unit:"g",qty:250,pack:500,price:3}]
+  };
+  const basket=priceGroceryBasket(Object.values(recipes).map(ingredients=>({ingredients})));
+  const purchased=confirmCheckedGroceryPurchases(basket.lines,["Rice|g"],{});
+  assert.equal(purchased["Rice|g"],500);
+  assert.equal(purchased["Chicken|g"],undefined);
+  assert.equal(recipeIngredientAvailability(recipes.stirFry,purchased).canCook,false);
+  assert.equal(recipeIngredientAvailability(recipes.riceBowl,purchased).canCook,true);
+  const afterCook=remainingConfirmedStock(purchased,{},[
+    {recipe:"riceBowl",at:"2026-11-12T13:00:00Z",ingredients:recipes.riceBowl}
+  ],"2026-11-12T12:00:00Z",()=>undefined);
+  assert.equal(afterCook["Rice|g"],250);
+  assert.equal(recipeIngredientAvailability(recipes.riceBowl,afterCook).canCook,true);
+  const afterSecond=remainingConfirmedStock(purchased,{},[
+    {recipe:"riceBowl",at:"2026-11-12T13:00:00Z",ingredients:recipes.riceBowl},
+    {recipe:"riceBowl",at:"2026-11-12T14:00:00Z",ingredients:recipes.riceBowl}
+  ],"2026-11-12T12:00:00Z",()=>undefined);
+  assert.equal(afterSecond["Rice|g"],0);
+  assert.equal(recipeIngredientAvailability(recipes.riceBowl,afterSecond).canCook,false);
+});
+
+test("cooking snapshots survive recipe edits and deleted recipes",()=>{
+  const oldRecipe=[{name:"Rice",unit:"g",qty:200}];
+  const editedRecipe=[{name:"Rice",unit:"g",qty:450}];
+  const event={recipe:"custom-1",at:"2026-11-12T13:00:00Z",ingredients:oldRecipe};
+  const afterEdit=remainingConfirmedStock({"Rice|g":500},{},[event],"2026-11-12T12:00:00Z",()=>editedRecipe);
+  const afterDelete=remainingConfirmedStock({"Rice|g":500},{},[event],"2026-11-12T12:00:00Z",()=>undefined);
+  assert.equal(afterEdit["Rice|g"],300);
+  assert.equal(afterDelete["Rice|g"],300);
+  const legacy=remainingConfirmedStock({"Rice|g":500},{},[{recipe:"custom-1",at:event.at}],"2026-11-12T12:00:00Z",()=>editedRecipe);
+  assert.equal(legacy["Rice|g"],50);
+});
+
+test("new trip carries remaining quantities without double-counting old cooks",()=>{
+  const events=[{recipe:"rice",at:"2026-11-12T13:00:00Z",ingredients:[{name:"Rice",unit:"g",qty:200}]}];
+  const remaining=remainingConfirmedStock({"Rice|g":500},{"Eggs|each":4},events,"2026-11-12T12:00:00Z",()=>undefined);
+  const carried=Object.fromEntries(Object.entries(remaining).filter(([,qty])=>qty>0));
+  const next=remainingConfirmedStock({},carried,events,null,()=>undefined);
+  assert.deepEqual(next,{"Rice|g":300,"Eggs|each":4});
+});
