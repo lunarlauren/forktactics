@@ -23,9 +23,42 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run regression tests
         id: tests
-        run: npm test
-      # Diagnose build failures independently; a failed test must not hide
-      # whether the app also fails to compile. The job still fails if tests fail.
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee regression-tests.log
       - name: Build production app
+        id: build
         if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
-        run: npm run build
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee production-build.log
+      - name: Publish verification summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## ForkTactics verification'
+            echo "- Regression tests: ${{ steps.tests.outcome }}"
+            echo "- Production build: ${{ steps.build.outcome }}"
+            echo ''
+            echo '### Test output (last 80 lines)'
+            echo '~~~'
+            if [ -f regression-tests.log ]; then tail -n 80 regression-tests.log; else echo 'Tests did not run'; fi
+            echo '~~~'
+            echo '### Build output (last 40 lines)'
+            echo '~~~'
+            if [ -f production-build.log ]; then tail -n 40 production-build.log; else echo 'Build did not run'; fi
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload verification logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forktactics-verification-logs
+          path: |
+            regression-tests.log
+            production-build.log
+          if-no-files-found: ignore
+          retention-days: 14
