@@ -123,6 +123,8 @@ export function remainingConfirmedStock(
   }
   if(!tripStartedAt)return remaining;
   for(const event of events){
+    // Ignore malformed timestamps rather than debiting the wrong trip.
+    if(typeof event.at!=="string"||!Number.isFinite(Date.parse(event.at)))continue;
     if(event.at<tripStartedAt)continue;
     const ingredients=requirements(event.recipe);
     if(!ingredients)continue;
