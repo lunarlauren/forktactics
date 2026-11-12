@@ -1,4 +1,4 @@
-import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds,confirmShoppingCart,recipeIngredientCostEstimate,cooksInCurrentTrip} from "./planning-adapter";
+import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds,confirmShoppingCart,retainUnchangedCart,recipeIngredientCostEstimate,cooksInCurrentTrip} from "./planning-adapter";
 import Onboarding,{type Setup} from "./Onboarding";
 import React,{useEffect,useMemo,useState} from "react";
 import {ChefHat,CalendarDays,ShoppingBasket,BookOpen,Settings2,Plus,Check,Lock,Unlock,Shuffle,ChevronRight,ArrowLeft,RotateCcw,Download,Upload,Search,Sparkles,Leaf,Wallet,Info,X,Minus,Heart,Clock,Users,CheckCircle2} from "lucide-react";
@@ -348,7 +348,7 @@ function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"ove
   const previousBasket=basketFor(shoppingMenuIds(s.plan,shoppingCount));
   const stillChecked=(name:string)=>previousBasket.lines.some(before=>(name===before.name||name===before.name+"|"+before.unit)&&nextBasket.lines.some(after=>after.name===before.name&&after.unit===before.unit&&after.qty===before.qty));
   if(result==="ok"&&nextBasket.unknownCount>0)result="unknown-prices";
-  return {next:{...s,plan,checked:s.checked.filter(stillChecked)},result};
+  return {next:{...s,plan,checked:s.checked.filter(stillChecked),cartPackages:retainUnchangedCart(previousBasket.lines,nextBasket.lines,s.cartPackages||{})},result};
 }
 function fillOpenDays(){
   const {next,result}=generatePlan(state,true);
