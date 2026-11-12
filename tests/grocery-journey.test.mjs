@@ -182,3 +182,25 @@ test("clearing history does not resurrect already consumed stock",()=>{
  assert.deepEqual(reset.pantryQuantities,{});
  assert.deepEqual(reset.purchasedQuantities,{});
 });
+
+test("shopping, cooking, clearing history, and next trip keep one consistent stock ledger",()=>{
+ const beans={name:"Black beans",unit:"g",qty:400,pack:400,price:1.29};
+ const tortillas={name:"Tortillas",unit:"each",qty:6,pack:10,price:2.99};
+ const basket=priceGroceryBasket([{ingredients:[beans,tortillas]}]).lines;
+ const purchased=confirmShoppingCart(basket,[],{"Black beans|g":3,"Tortillas|each":1},{});
+ assert.deepEqual(purchased,{"Black beans|g":1200,"Tortillas|each":10});
+ const first=[{recipe:"burgers",at:"2026-11-12T10:00:00Z",ingredients:[{name:"Black beans",unit:"g",qty:400}]}];
+ const afterFirst=remainingConfirmedStock(purchased,{},first,"2026-11-12T09:00:00Z",()=>undefined);
+ assert.equal(afterFirst["Black beans|g"],800);
+ const reset=resetCookingLedger(purchased,{},first,"2026-11-12T09:00:00Z",()=>undefined,"2026-11-12T11:00:00Z");
+ assert.equal(reset.pantryQuantities["Black beans|g"],800);
+ const second=[{recipe:"fajitas",at:"2026-11-12T12:00:00Z",ingredients:[{name:"Black beans",unit:"g",qty:400},{name:"Tortillas",unit:"each",qty:6}]}];
+ const afterSecond=remainingConfirmedStock(reset.purchasedQuantities,reset.pantryQuantities,second,reset.tripStartedAt,()=>undefined);
+ assert.equal(afterSecond["Black beans|g"],400);
+ assert.equal(afterSecond["Tortillas|each"],4);
+ const nextTripPantry=Object.fromEntries(Object.entries(afterSecond).filter(([,qty])=>qty>0));
+ const nextTrip=remainingConfirmedStock({},nextTripPantry,second,null,()=>undefined);
+ assert.deepEqual(nextTrip,{"Black beans|g":400,"Tortillas|each":4});
+ assert.equal(recipeIngredientAvailability([{name:"Black beans",unit:"g",qty:400}],nextTrip).canCook,true);
+ assert.equal(recipeIngredientAvailability([{name:"Tortillas",unit:"each",qty:6}],nextTrip).canCook,false);
+});
