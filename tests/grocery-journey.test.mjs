@@ -204,3 +204,22 @@ test("shopping, cooking, clearing history, and next trip keep one consistent sto
  assert.equal(recipeIngredientAvailability([{name:"Black beans",unit:"g",qty:400}],nextTrip).canCook,true);
  assert.equal(recipeIngredientAvailability([{name:"Tortillas",unit:"each",qty:6}],nextTrip).canCook,false);
 });
+
+test("extra packages purchased at checkout remain available across cooking and trip reset",()=>{
+  const meal={ingredients:[{name:"Soy sauce",unit:"mL",qty:40,pack:150,price:2.99}]};
+  const lines=priceGroceryBasket([meal]).lines;
+  // Selecting two bottles is independent of the recipe's one-bottle recommendation.
+  const purchased=confirmShoppingCart(lines,[],{"Soy sauce|mL":2},{});
+  assert.deepEqual(purchased,{"Soy sauce|mL":300});
+  const start="2026-11-12T12:00:00Z";
+  const cook={recipe:"stir-fry",at:"2026-11-12T13:00:00Z",ingredients:[{name:"Soy sauce",unit:"mL",qty:40}]};
+  const afterCook=remainingConfirmedStock(purchased,{},[cook],start,()=>undefined);
+  assert.equal(afterCook["Soy sauce|mL"],260);
+  assert.equal(recipeIngredientAvailability(meal.ingredients,afterCook).canCook,true);
+  const reset=resetCookingLedger(purchased,{},[cook],start,()=>undefined,"2026-11-12T14:00:00Z");
+  assert.equal(reset.pantryQuantities["Soy sauce|mL"],260);
+  assert.deepEqual(reset.purchasedQuantities,{});
+  const nextCook={...cook,at:"2026-11-12T15:00:00Z"};
+  const afterNext=remainingConfirmedStock(reset.purchasedQuantities,reset.pantryQuantities,[nextCook],reset.tripStartedAt,()=>undefined);
+  assert.equal(afterNext["Soy sauce|mL"],220);
+});
