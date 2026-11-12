@@ -116,7 +116,7 @@ export function recipeIngredientAvailability(
 export function remainingConfirmedStock(
   purchased:Record<string,number>,
   pantry:Record<string,number>,
-  events:{recipe:string;at:string}[],
+  events:{recipe:string;at:string;ingredients?:Pick<GroceryInput,"name"|"unit"|"qty">[]}[],
   tripStartedAt:string|null,
   requirements:(recipeId:string)=>Pick<GroceryInput,"name"|"unit"|"qty">[]|undefined
 ):Record<string,number>{
@@ -136,7 +136,8 @@ export function remainingConfirmedStock(
     // different timezone offsets or fractional-second precision.
     const eventMs=Date.parse(event.at);
     if(!Number.isFinite(eventMs)||eventMs<tripStartMs)continue;
-    const ingredients=requirements(event.recipe);
+    // Snapshots keep consumption stable when a custom recipe is later edited.
+    const ingredients=Array.isArray(event.ingredients)?event.ingredients:requirements(event.recipe);
     if(!ingredients)continue;
     for(const item of ingredients){
       if(!Number.isFinite(item.qty)||item.qty<=0)continue;
