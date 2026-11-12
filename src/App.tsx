@@ -1,4 +1,4 @@
-import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds,confirmCheckedGroceryPurchases,recipeIngredientCostEstimate} from "./planning-adapter";
+import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds,confirmCheckedGroceryPurchases,recipeIngredientCostEstimate,cooksInCurrentTrip} from "./planning-adapter";
 import Onboarding,{type Setup} from "./Onboarding";
 import React,{useEffect,useMemo,useState} from "react";
 import {ChefHat,CalendarDays,ShoppingBasket,BookOpen,Settings2,Plus,Check,Lock,Unlock,Shuffle,ChevronRight,ArrowLeft,RotateCcw,Download,Upload,Search,Sparkles,Leaf,Wallet,Info,X,Minus,Heart,Clock,Users,CheckCircle2} from "lucide-react";
@@ -109,7 +109,7 @@ const forecastAfter=(selectedRecipe:Recipe)=>{
  const selectedReq=requirements(selectedRecipe);
  if(selectedReq.some(x=>(remaining.get(x.key)||0)+1e-6<x.qty))return {lineup:[] as Recipe[],possible:false,needed:0};
  deduct(selectedReq);
- const currentCooks=state.events.filter(e=>Boolean(state.tripStartedAt)&&e.at>=state.tripStartedAt!).length;
+ const currentCooks=cooksInCurrentTrip(state.events,state.tripStartedAt);
  const needed=Math.max(0,Math.min(state.shoppingTarget||5,state.plan.length)-currentCooks-1);
  const candidates=state.plan.filter((id,i)=>id&&id!==selectedRecipe.id&&state.plan.indexOf(id)===i)
    .map(id=>recipes.find(recipe=>recipe.id===id)).filter((recipe):recipe is Recipe=>Boolean(recipe));
@@ -132,7 +132,7 @@ const forecastAfter=(selectedRecipe:Recipe)=>{
 // Find the least additional whole-package spend needed for a feasible remaining
 // lineup. Existing recorded stock is credited before any recovery purchases.
 const recoveryFor=(selectedRecipe:Recipe)=>{
- const currentCooks=state.events.filter(e=>Boolean(state.tripStartedAt)&&e.at>=state.tripStartedAt!).length;
+ const currentCooks=cooksInCurrentTrip(state.events,state.tripStartedAt);
  const needed=Math.max(0,Math.min(state.shoppingTarget||5,state.plan.length)-currentCooks-1);
  const remaining=new Map(stock);
  const ingredientList=(recipe:Recipe)=>scaleMeals([recipe],state.household||2)[0].ingredients.filter(i=>i.qty>0);
