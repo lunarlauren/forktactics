@@ -6,12 +6,12 @@ import {tmpdir} from "node:os";
 import {pathToFileURL} from "node:url";
 
 const dir=mkdtempSync(join(tmpdir(),"forktactics-journey-"));
-let shoppingMenuIds,retainUnchangedCart,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability;
+let shoppingMenuIds,retainUnchangedCart,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability,resetCookingLedger;
 try{
   const source=readFileSync(new URL("../src/planning-adapter.ts",import.meta.url),"utf8");
   const path=join(dir,"planning-adapter.mts");
   writeFileSync(path,source);
-  ({shoppingMenuIds,retainUnchangedCart,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability}=await import(pathToFileURL(path).href));
+  ({shoppingMenuIds,retainUnchangedCart,priceGroceryBasket,confirmCheckedGroceryPurchases,confirmShoppingCart,remainingConfirmedStock,recipeIngredientAvailability,resetCookingLedger}=await import(pathToFileURL(path).href));
 }finally{rmSync(dir,{recursive:true,force:true});}
 
 test("empty slots, checkout, cooking, and leftovers work as one grocery trip",()=>{
@@ -160,4 +160,25 @@ test("regenerating meals retains cart quantities only for unchanged grocery line
  const cart={"Rice|g":0,"Beans|g":2,"Eggs|each":1,"Old|each":5};
  assert.deepEqual(retainUnchangedCart(before,after,cart),{"Rice|g":0});
  assert.deepEqual(cart,{"Rice|g":0,"Beans|g":2,"Eggs|each":1,"Old|each":5});
+});
+
+test("clearing history preserves leftover stock but future cooks still consume it",()=>{
+ const ingredients=[{name:"Black beans",unit:"g",qty:400}];
+ const oldEvents=[{recipe:"burgers",at:"2026-11-12T12:30:00Z",ingredients}];
+ const resetAt="2026-11-12T13:00:00Z";
+ const reset=resetCookingLedger({"Black beans|g":800},{},oldEvents,"2026-11-12T12:00:00Z",()=>ingredients,resetAt);
+ assert.deepEqual(reset.pantryQuantities,{"Black beans|g":400});
+ assert.deepEqual(reset.purchasedQuantities,{});
+ assert.equal(reset.tripStartedAt,resetAt);
+ assert.equal(recipeIngredientAvailability(ingredients,remainingConfirmedStock(reset.purchasedQuantities,reset.pantryQuantities,[],reset.tripStartedAt,()=>ingredients)).canCook,true);
+ const nextCook=[{recipe:"fajitas",at:"2026-11-12T13:15:00Z",ingredients}];
+ const after=remainingConfirmedStock(reset.purchasedQuantities,reset.pantryQuantities,nextCook,reset.tripStartedAt,()=>ingredients);
+ assert.equal(recipeIngredientAvailability(ingredients,after).canCook,false);
+ assert.equal(after["Black beans|g"],0);
+});
+test("clearing history does not resurrect already consumed stock",()=>{
+ const events=[{recipe:"rice",at:"2026-11-12T12:30:00Z",ingredients:[{name:"Rice",unit:"g",qty:500}]}];
+ const reset=resetCookingLedger({"Rice|g":500},{},events,"2026-11-12T12:00:00Z",()=>undefined,"2026-11-12T13:00:00Z");
+ assert.deepEqual(reset.pantryQuantities,{});
+ assert.deepEqual(reset.purchasedQuantities,{});
 });
