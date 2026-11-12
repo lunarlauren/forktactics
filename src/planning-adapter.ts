@@ -134,3 +134,12 @@ export function remainingConfirmedStock(
   }
   return remaining;
 }
+
+
+/** Select the requested number of actual menu choices, ignoring empty slots.
+ * Grocery shopping is based on meals, not the position of a meal in the UI.
+ */
+export function shoppingMenuIds(plan:string[],target:number):string[]{
+  const count=Number.isFinite(target)?Math.max(0,Math.floor(target)):0;
+  return plan.filter(id=>typeof id==="string"&&id.trim().length>0).slice(0,count);
+}
