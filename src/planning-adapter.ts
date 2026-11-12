@@ -209,7 +209,7 @@ export function recipeIngredientCostEstimate(
 /** Count valid completed cooks since the current trip began.
  * Timestamp offsets must be compared as instants, never lexicographically.
  */
-export function cooksInCurrentTrip(events:{at:string}[],tripStartedAt:string|null):number{
+export function cooksInCurrentTrip(events:{recipe:string;at:string}[],tripStartedAt:string|null):number{
   if(!tripStartedAt)return 0;
   const start=Date.parse(tripStartedAt);
   if(!Number.isFinite(start))return 0;
