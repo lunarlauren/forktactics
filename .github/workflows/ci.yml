@@ -27,6 +27,12 @@ jobs:
         run: |
           set -o pipefail
           npm test 2>&1 | tee regression-tests.log
+      - name: Typecheck application
+        id: typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee typecheck.log
       - name: Build production app
         id: build
         if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
@@ -41,6 +47,7 @@ jobs:
           {
             echo '## ForkTactics verification'
             echo "- Regression tests: ${{ steps.tests.outcome }}"
+            echo "- TypeScript: ${{ steps.typecheck.outcome }}"
             echo "- Production build: ${{ steps.build.outcome }}"
             echo ''
             echo '### Test output (last 80 lines)'
@@ -59,6 +66,7 @@ jobs:
           name: forktactics-verification-logs
           path: |
             regression-tests.log
+            typecheck.log
             production-build.log
           if-no-files-found: ignore
           retention-days: 14
