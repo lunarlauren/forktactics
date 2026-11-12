@@ -214,7 +214,8 @@ export function cooksInCurrentTrip(events:{at:string}[],tripStartedAt:string|nul
   const start=Date.parse(tripStartedAt);
   if(!Number.isFinite(start))return 0;
   return events.filter(event=>{
-    if(!event||typeof event.at!=="string")return false;
+    // A timestamp alone does not establish that a meal was cooked.
+    if(!event||typeof event.recipe!=="string"||!event.recipe.trim()||typeof event.at!=="string")return false;
     const at=Date.parse(event.at);
     return Number.isFinite(at)&&at>=start;
   }).length;
