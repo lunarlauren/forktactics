@@ -113,3 +113,21 @@ test("malformed event timestamps never consume confirmed inventory",()=>{
   const remaining=remainingConfirmedStock({"Rice|g":500},{},events,"2026-11-11T17:00:00.000Z",requirements);
   assert.equal(remaining["Rice|g"],300);
 });
+
+
+test("timezone offsets compare by actual instant rather than text order",()=>{
+  const remaining=remainingConfirmedStock({"Rice|g":500},{},[
+    // 17:30Z is before the trip even though its text starts with 19.
+    {recipe:"rice",at:"2026-11-11T19:30:00+02:00"},
+    // 18:30Z is after the trip even though its text starts with 13.
+    {recipe:"rice",at:"2026-11-11T13:30:00-05:00"}
+  ],"2026-11-11T18:00:00.000Z",requirements);
+  assert.equal(remaining["Rice|g"],300);
+});
+
+test("invalid trip boundaries do not accidentally debit historical stock",()=>{
+  const remaining=remainingConfirmedStock({"Rice|g":500},{},[
+    {recipe:"rice",at:"2026-11-11T18:30:00Z"}
+  ],"invalid-trip-date",requirements);
+  assert.equal(remaining["Rice|g"],500);
+});
