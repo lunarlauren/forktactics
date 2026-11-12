@@ -105,3 +105,32 @@ export function recipeIngredientAvailability(
   }
   return {canCook:missing.length===0,missing};
 }
+
+/** Subtract confirmed cooking events from recorded stock without mutating inputs.
+ * Only events in the current shopping trip consume this trip's inventory.
+ * Duplicate ingredient entries and repeated cooks are charged independently.
+ */
+export function remainingConfirmedStock(
+  purchased:Record<string,number>,
+  pantry:Record<string,number>,
+  events:{recipe:string;at:string}[],
+  tripStartedAt:string|null,
+  requirements:(recipeId:string)=>Pick<GroceryInput,"name"|"unit"|"qty">[]|undefined
+):Record<string,number>{
+  const remaining:Record<string,number>={};
+  for(const source of [purchased,pantry])for(const [key,qty] of Object.entries(source)){
+    if(typeof qty==="number"&&Number.isFinite(qty)&&qty>0)remaining[key]=(remaining[key]||0)+qty;
+  }
+  if(!tripStartedAt)return remaining;
+  for(const event of events){
+    if(event.at<tripStartedAt)continue;
+    const ingredients=requirements(event.recipe);
+    if(!ingredients)continue;
+    for(const item of ingredients){
+      if(!Number.isFinite(item.qty)||item.qty<=0)continue;
+      const key=item.name+"|"+item.unit;
+      remaining[key]=(remaining[key]||0)-item.qty;
+    }
+  }
+  return remaining;
+}
