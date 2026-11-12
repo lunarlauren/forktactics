@@ -158,3 +158,9 @@ test("fractional ingredient arithmetic does not falsely block cooking",()=>{
   assert.equal(insufficient.missing.length,1);
   assert.ok(Math.abs(insufficient.missing[0].qty-0.01)<1e-9);
 });
+
+
+test("corrupted null cooking events do not crash trip forecasts",()=>{
+  const events=[null,{at:"2026-11-11T18:30:00Z"}];
+  assert.equal(cooksInCurrentTrip(events,"2026-11-11T18:00:00Z"),1);
+});
