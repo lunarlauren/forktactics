@@ -186,3 +186,21 @@ test("malformed recovery purchases remain pending without corrupting valid check
   assert.deepEqual(result.purchased,{"Beans|can":3});
   assert.deepEqual(result.remainingRecovery,[recovery[1],null]);
 });
+
+test("repeated checkout with cleared selections does not record purchases twice",()=>{
+  const recovery=[
+    {name:"Beans",unit:"can",packs:2,pack:1,checked:true},
+    {name:"Rice",unit:"g",packs:1,pack:500,checked:false}
+  ];
+  // The first trip already has partially consumed rice stock.
+  const existing={"Beans|can":1,"Rice|g":175};
+  const first=checkoutShoppingTrip([],[],{},existing,recovery);
+  assert.deepEqual(first.purchased,{"Beans|can":3,"Rice|g":175});
+  assert.deepEqual(first.remainingRecovery,[recovery[1]]);
+
+  // After confirmation, the UI clears selections and keeps only pending recovery.
+  const second=checkoutShoppingTrip([],[],{},first.purchased,first.remainingRecovery);
+  assert.deepEqual(second.purchased,first.purchased);
+  assert.deepEqual(second.remainingRecovery,[recovery[1]]);
+  assert.deepEqual(existing,{"Beans|can":1,"Rice|g":175});
+});
