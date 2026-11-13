@@ -260,12 +260,22 @@ function swap(index:number,id:string){
  if(state.locked[index]){setPicker(null);setToast("Unlock this menu option before changing its recipe.");return;}
  update(s=>{
   if(s.locked[index])return s;
-  // A checked grocery is only a pending shopping selection. Do not convert it
-  // into a purchase when editing the menu; confirmation owns that transition.
-  // Existing purchasedQuantities persist independently of the current basket.
-  return {...s,plan:s.plan.map((x,i)=>i===index?id:x)};
+  // Manual swaps must reconcile pending selections just like auto-planning.
+  // A different ingredient requirement or package size invalidates its cart
+  // selection; confirmed purchases and actual pantry stock remain untouched.
+  const nextPlan=s.plan.map((x,i)=>i===index?id:x);
+  const priceSheet=s.priceSheets?.[s.activePriceSheet||"Sample prices"]||{};
+  const shoppingCount=s.shoppingTarget||Math.min(5,s.plan.length);
+  const basketFor=(plan:string[])=>priceGroceryBasket(
+   scaleMeals(shoppingMenuIds(plan,shoppingCount).map(recipeId=>recipes.find(recipe=>recipe.id===recipeId)).filter((recipe):recipe is Recipe=>Boolean(recipe)),s.household||2),
+   priceSheet,s.pantryQuantities||{}).lines;
+  const before=basketFor(s.plan);
+  const after=basketFor(nextPlan);
+  const unchanged=new Set(before.filter(line=>after.some(candidate=>candidate.name===line.name&&candidate.unit===line.unit&&candidate.qty===line.qty&&candidate.pack===line.pack)).map(line=>line.name+"|"+line.unit));
+  const checked=(s.checked||[]).filter(key=>before.some(line=>(key===line.name+"|"+line.unit||key===line.name)&&unchanged.has(line.name+"|"+line.unit)));
+  return {...s,plan:nextPlan,checked,cartPackages:retainUnchangedCart(before,after,s.cartPackages||{})};
  });
- setPicker(null);setToast("Dinner swapped. Recorded purchases and pending shopping checks are preserved; review new grocery needs.");
+ setPicker(null);setToast("Dinner swapped. Unchanged cart selections were kept; outdated selections cleared. Confirmed purchases are safe.");
 }
 function generatePlan(s:State,preserveChosen=false):{next:State;result:"ok"|"over-budget"|"no-recipes"|"unknown-prices"|"locked-empty"|"missing-locked-recipe"|"missing-chosen-recipe"|"not-enough-recipes"}{
   // A locked blank day cannot be populated by full-week generation.
