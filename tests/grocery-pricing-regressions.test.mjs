@@ -71,3 +71,22 @@ test("invalid quantities and package overrides never create negative or nonfinit
   assert.equal(result.knownTotal,0);
   assert.equal(result.unknownCount,1);
 });
+
+test("unsafe grocery line prices stay unknown instead of contaminating the basket total",()=>{
+  const result=priceGroceryBasket([meal(ingredient("Rice",1,1,4),ingredient("Rare spice",1,1,1e15))]);
+  assert.equal(result.knownTotal,4);
+  assert.equal(result.unknownCount,1);
+  assert.equal(result.lines.find(line=>line.name==="Rare spice").cost,null);
+});
+
+test("safe individual grocery lines cannot overflow the combined total",()=>{
+  const expensive=45000000000000;
+  const result=priceGroceryBasket([meal(
+    ingredient("Ingredient A",1,1,expensive),
+    ingredient("Ingredient B",1,1,expensive),
+    ingredient("Ingredient C",1,1,expensive)
+  )]);
+  assert.equal(result.knownTotal,expensive*2);
+  assert.equal(result.unknownCount,1);
+  assert.equal(result.lines.find(line=>line.name==="Ingredient C").cost,null);
+});
