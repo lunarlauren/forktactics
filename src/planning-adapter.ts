@@ -178,7 +178,15 @@ export function remainingConfirmedStock(
  */
 export function shoppingMenuIds(plan:string[],target:number):string[]{
   const count=Number.isFinite(target)?Math.max(0,Math.floor(target)):0;
-  return plan.filter(id=>typeof id==="string"&&id.trim().length>0).slice(0,count);
+  // A shopping menu represents distinct recipe choices, not repeated slots.
+  // Deduplicate before applying the target so a repeated suggestion cannot
+  // crowd out another recipe or produce a menu of identical meals.
+  const seen=new Set<string>();
+  return plan.filter(id=>{
+    if(typeof id!=="string"||!id.trim()||seen.has(id))return false;
+    seen.add(id);
+    return true;
+  }).slice(0,count);
 }
 
 
