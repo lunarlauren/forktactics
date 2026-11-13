@@ -238,7 +238,9 @@ export function confirmShoppingCart(
   const previous=Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
   const defaultPacks=line.pack>0?Math.ceil(Math.max(0,line.qty-previous)/line.pack-1e-9):0;
   const count=typeof selected==="number"&&Number.isInteger(selected)&&selected>=0?selected:checkedLine?defaultPacks:0;
-  if(count>0&&Number.isFinite(line.pack)&&line.pack>0)purchased[key]=previous+count*line.pack;
+  // Imported cart counts can be enormous. Never persist Infinity as stock.
+  const added=count*line.pack;
+  if(count>0&&Number.isFinite(line.pack)&&line.pack>0&&Number.isFinite(added)&&Number.isFinite(previous+added))purchased[key]=previous+added;
  }
  return purchased;
 }
@@ -307,7 +309,11 @@ export function checkoutShoppingTrip(
   }
   const key=item.name+"|"+item.unit;
   const current=typeof purchased[key]==="number"&&Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
-  purchased[key]=current+item.packs*item.pack;
+  const added=item.packs*item.pack;
+  if(!Number.isFinite(added)||!Number.isFinite(current+added)){
+   remainingRecovery.push(item);continue;
+  }
+  purchased[key]=current+added;
  }
  return {purchased,remainingRecovery};
 }
