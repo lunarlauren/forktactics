@@ -289,8 +289,12 @@ export function checkoutShoppingTrip(
  const purchased=confirmShoppingCart(lines,checked,selectedPackages,existing);
  const remainingRecovery:typeof recovery=[];
  for(const item of recovery){
+  // Malformed imported recovery entries must not crash checkout or invent stock.
+  if(!item||typeof item!=="object"){remainingRecovery.push(item);continue;}
   if(!item.checked){remainingRecovery.push(item);continue;}
-  if(!item.name||!item.unit||!Number.isInteger(item.packs)||item.packs<=0||!Number.isFinite(item.pack)||item.pack<=0){
+  if(typeof item.name!=="string"||!item.name.trim()||item.name.includes("|")||
+     typeof item.unit!=="string"||!item.unit.trim()||item.unit.includes("|")||
+     !Number.isInteger(item.packs)||item.packs<=0||!Number.isFinite(item.pack)||item.pack<=0){
    // Invalid imports must not create inventory out of thin air.
    remainingRecovery.push(item);continue;
   }
