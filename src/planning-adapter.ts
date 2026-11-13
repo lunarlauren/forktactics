@@ -140,7 +140,7 @@ export function remainingConfirmedStock(
     const ingredients=Array.isArray(event.ingredients)?event.ingredients:requirements(event.recipe);
     if(!ingredients)continue;
     for(const item of ingredients){
-      if(!Number.isFinite(item.qty)||item.qty<=0)continue;
+      if(!item||typeof item.name!=="string"||!item.name.trim()||typeof item.unit!=="string"||!item.unit.trim()||typeof item.qty!=="number"||!Number.isFinite(item.qty)||item.qty<=0)continue;
       const key=item.name+"|"+item.unit;
       remaining[key]=(remaining[key]||0)-item.qty;
     }
