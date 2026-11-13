@@ -216,7 +216,15 @@ export function recipeIngredientCostEstimate(
     const price=hasUnit?overrides[key]:hasLegacy?overrides[item.name]:pack!==item.pack?null:item.price;
     if(typeof pack!=="number"||!Number.isFinite(pack)||pack<=0||
        typeof price!=="number"||!Number.isFinite(price)||price<0){unknown++;continue;}
-    cost+=item.qty/pack*price/servings;
+    const ingredientCost=item.qty/pack*price/servings;
+    // Imported quantities and shelf prices can overflow even when each input
+    // is finite. An unpriceable ingredient must not poison plan rankings with
+    // Infinity or make a candidate appear to have a trustworthy price.
+    if(!Number.isFinite(ingredientCost)||!Number.isFinite(cost+ingredientCost)){
+      unknown++;
+      continue;
+    }
+    cost+=ingredientCost;
   }
   return {cost:Math.round(cost*100)/100,unknown};
 }
