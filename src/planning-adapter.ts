@@ -22,6 +22,11 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     // Do not let a later priced recipe overwrite a previously unknown price.
     merged.set(key,{...item,price:conflictingPrice?null:previous?previous.price:item.price,pack:conflictingPack?0:previous?.pack??item.pack,qty:item.qty+(previous?.qty||0)});
   }
+  // Aggregating individually valid recipe amounts can still overflow to Infinity.
+  // Refuse an unusable shopping basket rather than silently recommending zero packs.
+  for(const item of merged.values()){
+    if(!Number.isFinite(item.qty))throw new Error("Grocery quantity exceeds supported range for "+item.name);
+  }
   const lines=Array.from(merged,([key,item])=>{
     // Unit-specific prices take precedence; legacy name-only price sheets remain valid.
     // This prevents a per-package price for one unit from overriding another unit.
@@ -47,16 +52,22 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     const requiredQty=item.qty;
     const qty=Math.max(0,requiredQty-pantryQty);
     // Floating-point dust must not turn one full package into two.
-    const packs=pack>0?Math.ceil(Math.max(0,qty/pack-1e-9)):0;
+    // An extremely small imported pack size can overflow the package count,
+    // which must never become a purchasable cart selection.
+    const rawPacks=pack>0?Math.ceil(Math.max(0,qty/pack-1e-9)):0;
+    const packs=Number.isSafeInteger(rawPacks)?rawPacks:0;
+    const validPackageCount=pack>0&&Number.isSafeInteger(rawPacks);
     const validPrice=price!==null&&typeof price==="number"&&Number.isFinite(price)&&price>=0;
     // Invalid imported or edited shelf prices are unknown, never negative/NaN
     // values shown as if they were usable prices in the shopping list.
     const safePrice=validPrice?price:null;
     // No purchase is needed when verified pantry stock covers the requirement.
     // An unknown shelf price must not make a zero-package grocery line unpriced.
-    return {...item,pack,qty,requiredQty,pantryQty,price:safePrice,packs,cost:qty===0?0:pack===0?null:validPrice?packs*Math.round(price*100)/100:null};
+    const estimatedCost=validPackageCount&&validPrice?packs*Math.round(price*100)/100:null;
+    return {...item,pack,qty,requiredQty,pantryQty,price:safePrice,packs,cost:qty===0?0:estimatedCost!==null&&Number.isFinite(estimatedCost)?estimatedCost:null};
   });
-  const knownTotal=Math.round(lines.reduce((sum,line)=>sum+Math.round((line.cost??0)*100),0))/100;
+  const knownTotalCents=lines.reduce((sum,line)=>sum+Math.round((line.cost??0)*100),0);
+  const knownTotal=Number.isFinite(knownTotalCents)?Math.round(knownTotalCents)/100:0;
   return {lines,knownTotal,unknownCount:lines.filter(x=>x.cost===null).length};
 }
 
