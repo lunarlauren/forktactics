@@ -264,3 +264,16 @@ test("malformed imported grocery rows do not block valid checkout",()=>{
   assert.deepEqual(existing,{"Rice|g":125});
   assert.deepEqual(confirmShoppingCart(malformed,[],{},existing),existing);
 });
+
+
+test("ambiguous imported ingredient keys cannot purchase another item's stock",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5))]);
+  const malformed=[
+    {...lines[0],name:"Rice|g",unit:"bag"},
+    {...lines[0],name:"Rice",unit:"g|bag"}
+  ];
+  const existing={"Rice|g":125,"Rice|g|bag":20};
+  const result=confirmShoppingCart([...malformed,...lines],["Rice|g","Rice|g|bag"],{},existing);
+  assert.deepEqual(result,{"Rice|g":625,"Rice|g|bag":20});
+  assert.deepEqual(existing,{"Rice|g":125,"Rice|g|bag":20});
+});
