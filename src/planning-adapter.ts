@@ -20,7 +20,7 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     const conflictingPrice=Boolean(previous&&previous.price!==item.price);
     // Once a conflict is found, retain uncertainty across all subsequent meals.
     // Do not let a later priced recipe overwrite a previously unknown price.
-    merged.set(key,{...item,price:conflictingPrice?null:previous?previous.price:item.price,pack:conflictingPack?0:previous?.pack??item.pack,qty:item.qty+(previous?.qty||0)});
+    merged.set(key,{...item,price:previous?.price===null||conflictingPrice?null:previous?previous.price:item.price,pack:conflictingPack?0:previous?.pack??item.pack,qty:item.qty+(previous?.qty||0)});
   }
   // Aggregating individually valid recipe amounts can still overflow to Infinity.
   // Refuse an unusable shopping basket rather than silently recommending zero packs.
