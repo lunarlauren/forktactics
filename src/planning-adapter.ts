@@ -288,6 +288,9 @@ export function confirmShoppingCart(
  // A basket is normally merged by ingredient/unit, but legacy or imported
  // duplicate lines must not purchase the same selected packages twice.
  for(const line of lines){
+  // Imported grocery lists can contain null or malformed rows. Ignore them
+  // without blocking valid purchases or changing persisted shopping data.
+  if(!line||typeof line.name!=="string"||!line.name.trim()||typeof line.unit!=="string"||!line.unit.trim())continue;
   const key=line.name+"|"+line.unit;
   if(seenKeys.has(key))continue;
   seenKeys.add(key);
@@ -295,6 +298,9 @@ export function confirmShoppingCart(
  }
  seenKeys.clear();
  for(const line of lines){
+  // Imported grocery lists can contain null or malformed rows. Ignore them
+  // without blocking valid purchases or changing persisted shopping data.
+  if(!line||typeof line.name!=="string"||!line.name.trim()||typeof line.unit!=="string"||!line.unit.trim())continue;
   const key=line.name+"|"+line.unit;
   if(seenKeys.has(key))continue;
   seenKeys.add(key);
