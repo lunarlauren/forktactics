@@ -259,7 +259,11 @@ export function confirmShoppingCart(
   const checkedLine=checked.includes(key)||(uniqueName&&checked.includes(line.name));
   const previous=Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
   const defaultPacks=line.pack>0?Math.ceil(Math.max(0,line.qty-previous)/line.pack-1e-9):0;
-  const count=typeof selected==="number"&&Number.isInteger(selected)&&selected>=0?selected:checkedLine?defaultPacks:0;
+  // An explicit cart quantity is authoritative. Invalid imported values must
+  // not fall back to a checked line and accidentally purchase extra packages.
+  const hasSelection=Object.prototype.hasOwnProperty.call(selectedPackages,key);
+  const validSelection=typeof selected==="number"&&Number.isSafeInteger(selected)&&selected>=0;
+  const count=hasSelection?(validSelection?selected:0):checkedLine&&Number.isSafeInteger(defaultPacks)?defaultPacks:0;
   // Imported cart counts can be enormous. Never persist Infinity as stock.
   const added=count*line.pack;
   if(count>0&&Number.isFinite(line.pack)&&line.pack>0&&Number.isFinite(added)&&Number.isFinite(previous+added))purchased[key]=previous+added;
