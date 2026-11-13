@@ -175,3 +175,42 @@
 .day-card.menu-unavailable .day-art{filter:grayscale(.85)}
 .day-card .menu-missing{color:#963f35;font-weight:750;line-height:1.4}
 .day-card .menu-ready{color:#2c7049;font-weight:750}
+
+
+/* TCG design system: collectible recipes, functional meal planning. */
+:root { --tcg-ink:#203a30; --tcg-gold:#b68b46; --tcg-paper:#fffaf0; --tcg-edge:#d6c39a; }
+.recipe-card { position:relative; isolation:isolate; border:3px solid var(--tcg-gold); border-radius:16px; background:linear-gradient(145deg,#fffdf4,#efe6d0); color:var(--tcg-ink); box-shadow:inset 0 0 0 2px #fff5d8,0 7px 0 #b9aa87,0 14px 25px #273a3024; overflow:hidden; transform:translateZ(0); }
+.recipe-card::before { content:""; position:absolute; inset:7px; border:1px solid #a98b5480; border-radius:9px; pointer-events:none; z-index:2; }
+.recipe-card:hover { transform:translateY(-5px); box-shadow:inset 0 0 0 2px #fff5d8,0 10px 0 #b9aa87,0 20px 32px #273a3033; }
+.recipe-card:focus-visible,.pack-gallery-card:focus-visible { outline:3px solid #285e46; outline-offset:5px; }
+.recipe-art { height:auto; aspect-ratio:4/3; margin:12px 12px 0; border:2px solid #a78c55; border-radius:8px; box-shadow:inset 0 0 0 3px #fff9dc,0 3px 8px #2d32241f; }
+.recipe-art::before { content:"FORKTACTICS  ✦  RECIPE CARD"; position:absolute; top:8px; left:10px; z-index:2; padding:4px 7px; border-radius:3px; background:#fff9e9d9; color:#42583e; font-size:9px; font-weight:800; letter-spacing:.09em; }
+.food-emoji { font-size:clamp(72px,8vw,112px); transition:transform .2s ease; }
+.recipe-card:hover .food-emoji { transform:scale(1.07) rotate(-3deg); }
+.recipe-card-body { padding:16px 17px 19px; }
+.recipe-card-body strong { display:block; font-size:clamp(16px,1.5vw,19px); line-height:1.2; letter-spacing:-.025em; }
+.recipe-card-kicker { text-transform:uppercase; letter-spacing:.13em; font-size:10px; font-weight:800; color:#795d35; }
+.card-power { color:#835d22; font-weight:900; }
+.card-meta { border-top:1px solid #d8cba9; margin-top:13px; padding-top:10px; }
+.recipe-card.holo,.recipe-card:has(.holo) { border-color:#e1b94c; background:linear-gradient(125deg,#fff8e5,#e7f4e9 35%,#f9e6f2 65%,#fff5d2); }
+.recipe-card.holo::after,.recipe-card:has(.holo)::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(115deg,transparent 22%,#ffffff55 38%,transparent 50%,#b6e9ff33 64%,transparent 77%); mix-blend-mode:screen; }
+.card-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr)); gap:24px 18px; align-items:stretch; }
+.recipe-rating-tile>.recipe-card { min-height:100%; }
+.recipe-rating-actions button { border:2px solid #cdbb90; border-radius:9px; background:#fff9e9; min-height:46px; }
+.recipe-rating-actions button.selected { background:#e2f0d9; border-color:#6f9d70; }
+.pack-gallery-card { border-radius:14px; }
+.pack-reveal-card,.rip-card { box-shadow:inset 0 0 0 2px #fff2c8,0 10px 25px #263c3029; }
+.day-art { border:2px solid #c5a566; box-shadow:inset 0 0 0 3px #fff9e7; }
+@media(max-width:760px) {
+ .card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px 10px; }
+ .recipe-art { margin:8px 8px 0; }
+ .recipe-art::before { font-size:7px; letter-spacing:0; }
+ .recipe-card-body { padding:12px 11px 14px; }
+ .recipe-card-body strong { font-size:14px; }
+ .food-emoji { font-size:clamp(48px,12vw,78px); }
+ .card-meta { flex-wrap:wrap; gap:5px; }
+ .recipe-rating-actions { gap:5px; }
+ .recipe-rating-actions button { font-size:12px; padding:7px 3px; }
+}
+@media(max-width:360px) { .card-grid { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .recipe-card,.food-emoji,.pack-gallery-card { transition:none!important; } }
