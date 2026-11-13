@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {priceGroceryBasket,outstandingGroceryEstimate,confirmShoppingCart,checkoutShoppingTrip} from "../src/planning-adapter.ts";
+import {priceGroceryBasket,outstandingGroceryEstimate,confirmShoppingCart,checkoutShoppingTrip,retainUnchangedCart} from "../src/planning-adapter.ts";
 
 const ingredient=(name,qty,pack,price,unit="g")=>({name,qty,pack,price,unit});
 const meal=(...ingredients)=>({ingredients});
@@ -231,4 +231,19 @@ test("unsafe recovery package counts stay pending without changing stock",()=>{
   assert.deepEqual(result.purchased,{"Beans|can":2,"Rice|g":500});
   assert.deepEqual(result.remainingRecovery,[invalid]);
   assert.deepEqual(stock,{"Beans|can":2});
+});
+
+test("retained cart selections require safe counts and unchanged grocery lines",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5),ingredient("Beans",2,1,1.25,"can"))]);
+  const next=lines.map(line=>({...line}));
+  const cart={"Rice|g":0,"Beans|can":2};
+  assert.deepEqual(retainUnchangedCart(lines,next,cart),cart);
+  assert.deepEqual(cart,{"Rice|g":0,"Beans|can":2});
+
+  for(const invalid of [Number.MAX_SAFE_INTEGER+1,Infinity,Number.NaN,-1,1.5,"2",null]){
+    assert.deepEqual(retainUnchangedCart(lines,next,{"Rice|g":invalid,"Beans|can":2}),{"Beans|can":2});
+  }
+
+  const changed=next.map(line=>line.name==="Rice"?{...line,pack:1000}:line);
+  assert.deepEqual(retainUnchangedCart(lines,changed,cart),{"Beans|can":2});
 });
