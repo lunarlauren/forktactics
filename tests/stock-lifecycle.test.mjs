@@ -176,3 +176,8 @@ test("corrupted cooking history cannot crash or consume unrelated pantry stock",
   const remaining=remainingConfirmedStock({"Rice|g":500},{"Eggs|each":6},events,"2026-11-11T18:00:00Z",requirements);
   assert.deepEqual(remaining,{"Rice|g":300,"Eggs|each":6});
 });
+
+test("malformed ingredient snapshots cannot crash or debit phantom stock",()=>{
+ const events=[{recipe:"rice",at:"2026-11-11T18:30:00Z",ingredients:[null,{name:"Rice",unit:"g",qty:100},{name:"Rice",unit:"g",qty:"200"},{name:"",unit:"g",qty:40},{name:"Rice",unit:null,qty:30}]}];
+ assert.deepEqual(remainingConfirmedStock({"Rice|g":500},{"Eggs|each":6},events,"2026-11-11T18:00:00Z",requirements),{"Rice|g":400,"Eggs|each":6});
+});
