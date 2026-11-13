@@ -63,12 +63,28 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     const safePrice=validPrice?price:null;
     // No purchase is needed when verified pantry stock covers the requirement.
     // An unknown shelf price must not make a zero-package grocery line unpriced.
-    const estimatedCost=validPackageCount&&validPrice?packs*Math.round(price*100)/100:null;
-    return {...item,pack,qty,requiredQty,pantryQty,price:safePrice,packs,cost:qty===0?0:estimatedCost!==null&&Number.isFinite(estimatedCost)?estimatedCost:null};
+    const cents=validPrice?Math.round(price*100):null;
+    const lineCents=cents!==null?packs*cents:null;
+    // A finite dollar value can still exceed safe cent precision. Do not
+    // present a misleading checkout estimate for an unrepresentable line.
+    const validLineCents=validPackageCount&&cents!==null&&Number.isSafeInteger(cents)&&
+      Number.isSafeInteger(lineCents);
+    return {...item,pack,qty,requiredQty,pantryQty,price:safePrice,packs,
+      cost:qty===0?0:validLineCents?(lineCents as number)/100:null};
   });
-  const knownTotalCents=lines.reduce((sum,line)=>sum+Math.round((line.cost??0)*100),0);
-  const knownTotal=Number.isFinite(knownTotalCents)?Math.round(knownTotalCents)/100:0;
-  return {lines,knownTotal,unknownCount:lines.filter(x=>x.cost===null).length};
+  let knownTotalCents=0;
+  for(const line of lines){
+    if(line.cost===null)continue;
+    const cents=Math.round(line.cost*100);
+    // Summing safe individual lines can overflow the basket total. Mark the
+    // overflowing line unknown instead of silently reporting a $0 basket.
+    if(!Number.isSafeInteger(cents)||!Number.isSafeInteger(knownTotalCents+cents)){
+      line.cost=null;
+      continue;
+    }
+    knownTotalCents+=cents;
+  }
+  return {lines,knownTotal:knownTotalCents/100,unknownCount:lines.filter(x=>x.cost===null).length};
 }
 
 /** Outstanding shopping cost after verified purchases, excluding manual checkmarks.
