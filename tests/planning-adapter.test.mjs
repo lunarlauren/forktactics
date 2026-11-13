@@ -277,3 +277,14 @@ test("ambiguous imported ingredient keys cannot purchase another item's stock",(
   assert.deepEqual(result,{"Rice|g":625,"Rice|g|bag":20});
   assert.deepEqual(existing,{"Rice|g":125,"Rice|g|bag":20});
 });
+
+
+test("tiny genuinely missing ingredients still block cooking",()=>{
+  const tiny=[{name:"Saffron",unit:"g",qty:0.0000001}];
+  assert.deepEqual(recipeIngredientAvailability(tiny,{}),{
+    canCook:false,missing:[{name:"Saffron",unit:"g",qty:0.0000001}]
+  });
+  assert.deepEqual(recipeIngredientAvailability(tiny,{"Saffron|g":0.0000001}),{canCook:true,missing:[]});
+  // Preserve the established tolerance for rounding dust in recorded stock.
+  assert.deepEqual(recipeIngredientAvailability([{name:"Rice",unit:"g",qty:0.3}],{"Rice|g":0.1+0.2}),{canCook:true,missing:[]});
+});
