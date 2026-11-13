@@ -63,12 +63,12 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     const safePrice=validPrice?price:null;
     // No purchase is needed when verified pantry stock covers the requirement.
     // An unknown shelf price must not make a zero-package grocery line unpriced.
-    const cents=validPrice?Math.round(price*100):null;
+    const cents=typeof price==="number"&&Number.isFinite(price)&&price>=0?Math.round(price*100):null;
     const lineCents=cents!==null?packs*cents:null;
     // A finite dollar value can still exceed safe cent precision. Do not
     // present a misleading checkout estimate for an unrepresentable line.
     const validLineCents=validPackageCount&&cents!==null&&Number.isSafeInteger(cents)&&
-      Number.isSafeInteger(lineCents);
+      lineCents!==null&&Number.isSafeInteger(lineCents);
     return {...item,pack,qty,requiredQty,pantryQty,price:safePrice,packs,
       cost:qty===0?0:validLineCents?(lineCents as number)/100:null};
   });
