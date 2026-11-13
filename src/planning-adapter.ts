@@ -309,3 +309,36 @@ export function checkoutShoppingTrip(
  }
  return {purchased,remainingRecovery};
 }
+
+/** Correct the *available* quantity of one ingredient without replaying past
+ * cooks or resetting unrelated inventory. Keep the consumption epoch intact so
+ * undo and shopping-trip carryover still use the original ledger.
+ */
+export function correctAvailableInventory(
+ purchased:Record<string,number>,
+ pantry:Record<string,number>,
+ available:Record<string,number>,
+ key:string,
+ desired:number
+):{purchasedQuantities:Record<string,number>;pantryQuantities:Record<string,number>}{
+ if(!key.includes("|")||!Number.isFinite(desired)||desired<0)throw new Error("Invalid pantry correction");
+ const current=Number.isFinite(available[key])?available[key]:0;
+ const difference=desired-current;
+ const purchasedQuantities={...purchased};
+ const pantryQuantities={...pantry};
+ if(Math.abs(difference)<=0.000001)return {purchasedQuantities,pantryQuantities};
+ const pantryQty=Math.max(0,Number.isFinite(pantry[key])?pantry[key]:0);
+ const purchasedQty=Math.max(0,Number.isFinite(purchased[key])?purchased[key]:0);
+ if(difference>0){
+  pantryQuantities[key]=Math.round((pantryQty+difference)*1e6)/1e6;
+ }else{
+  const removal=Math.min(-difference,pantryQty+purchasedQty);
+  const fromPantry=Math.min(pantryQty,removal);
+  const fromPurchased=Math.min(purchasedQty,removal-fromPantry);
+  const nextPantry=Math.round((pantryQty-fromPantry)*1e6)/1e6;
+  const nextPurchased=Math.round((purchasedQty-fromPurchased)*1e6)/1e6;
+  if(nextPantry>0)pantryQuantities[key]=nextPantry;else delete pantryQuantities[key];
+  if(nextPurchased>0)purchasedQuantities[key]=nextPurchased;else delete purchasedQuantities[key];
+ }
+ return {purchasedQuantities,pantryQuantities};
+}
