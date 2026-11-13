@@ -119,7 +119,9 @@ export function recipeIngredientAvailability(
     if(item.qty===0)continue;
     const key=item.name+"|"+item.unit;
     const previous=required.get(key);
-    required.set(key,{name:item.name,unit:item.unit,qty:(previous?.qty??0)+item.qty});
+    const total=(previous?.qty??0)+item.qty;
+    if(!Number.isFinite(total))throw new Error("Recipe quantity exceeds supported range for "+item.name);
+    required.set(key,{name:item.name,unit:item.unit,qty:total});
   }
   const missing:Array<{name:string;unit:string;qty:number}>=[];
   for(const [key,item] of required){
