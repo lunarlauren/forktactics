@@ -221,3 +221,14 @@ test("unsafe imported cart selections never fall back to checked purchases",()=>
   assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{},stock),{"Rice|g":1125});
   assert.deepEqual(stock,{"Rice|g":125});
 });
+
+
+test("unsafe recovery package counts stay pending without changing stock",()=>{
+  const stock={"Beans|can":2};
+  const invalid={name:"Beans",unit:"can",packs:Number.MAX_SAFE_INTEGER+1,pack:1,checked:true};
+  const valid={name:"Rice",unit:"g",packs:1,pack:500,checked:true};
+  const result=checkoutShoppingTrip([],[],{},stock,[invalid,valid]);
+  assert.deepEqual(result.purchased,{"Beans|can":2,"Rice|g":500});
+  assert.deepEqual(result.remainingRecovery,[invalid]);
+  assert.deepEqual(stock,{"Beans|can":2});
+});
