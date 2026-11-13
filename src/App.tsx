@@ -250,7 +250,12 @@ function update(f:(s:State)=>State){setState(s=>f(s))}function setInventoryQuant
    if(nextPantry>0)pantryQuantities[key]=nextPantry;else delete pantryQuantities[key];
    if(nextPurchased>0)purchasedQuantities[key]=nextPurchased;else delete purchasedQuantities[key];
   }
-  return {...current,pantryQuantities,purchasedQuantities,pantry:current.pantry.filter(name=>name!==key.split("|")[0]),checked:current.checked.filter(name=>name!==key&&name!==key.split("|")[0])};
+  // Keep legacy pantry labels and shopping selections for other units intact.
+  // A name-only legacy checkmark is ambiguous when the basket has multiple units.
+  const ingredientName=key.slice(0,key.lastIndexOf("|"));
+  const hasOtherUnit=basket.some(line=>line.name===ingredientName&&line.name+"|"+line.unit!==key);
+  const checked=current.checked.filter(name=>name!==key&&(hasOtherUnit||name!==ingredientName));
+  return {...current,pantryQuantities,purchasedQuantities,checked};
  });
 }
 function clearInventory(){
