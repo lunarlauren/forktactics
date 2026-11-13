@@ -166,17 +166,8 @@ export function confirmCheckedGroceryPurchases(
   checked:string[],
   existing:Record<string,number>={}
 ):Record<string,number>{
-  const purchased={...existing};
-  for(const line of lines){
-    const key=line.name+"|"+line.unit;
-    const uniqueName=lines.filter(item=>item.name===line.name).length===1;
-    if(!checked.includes(key)&&!(uniqueName&&checked.includes(line.name)))continue;
-    const previous=typeof purchased[key]==="number"&&Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
-    const remaining=Math.max(0,line.qty-previous);
-    if(remaining===0||!Number.isFinite(line.pack)||line.pack<=0)continue;
-    purchased[key]=previous+Math.ceil(Math.max(0,remaining/line.pack-1e-9))*line.pack;
-  }
-  return purchased;
+  // Reuse the shared checkout rules for legacy checked-only purchases.
+  return confirmShoppingCart(lines,checked,{},existing);
 }
 
 
