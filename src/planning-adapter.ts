@@ -226,9 +226,13 @@ export function confirmShoppingCart(
  existing:Record<string,number>={}
 ):Record<string,number>{
  const purchased={...existing};
+ // Count names once so legacy name-only checkmarks remain unambiguous without
+ // rescanning the entire basket for every ingredient.
+ const nameCounts=new Map<string,number>();
+ for(const line of lines)nameCounts.set(line.name,(nameCounts.get(line.name)||0)+1);
  for(const line of lines){
   const key=line.name+"|"+line.unit;
-  const uniqueName=lines.filter(item=>item.name===line.name).length===1;
+  const uniqueName=nameCounts.get(line.name)===1;
   const selected=selectedPackages[key];
   const checkedLine=checked.includes(key)||(uniqueName&&checked.includes(line.name));
   const previous=Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
