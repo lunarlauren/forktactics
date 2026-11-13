@@ -283,3 +283,29 @@ export function resetCookingLedger(
   .map(([key,qty])=>[key,Math.round(qty*1000000)/1000000]));
  return {pantryQuantities,purchasedQuantities:{},tripStartedAt:resetAt};
 }
+
+/** Atomically record selected main-cart packages and checked shortage recovery.
+ * Unchecked recovery suggestions survive checkout; no shopping selections are
+ * treated as stock until this function is invoked.
+ */
+export function checkoutShoppingTrip(
+ lines:GroceryLine[],
+ checked:string[],
+ selectedPackages:Record<string,number>,
+ existing:Record<string,number>,
+ recovery:{name:string;unit:string;packs:number;pack:number;checked:boolean}[]
+):{purchased:Record<string,number>;remainingRecovery:typeof recovery}{
+ const purchased=confirmShoppingCart(lines,checked,selectedPackages,existing);
+ const remainingRecovery:typeof recovery=[];
+ for(const item of recovery){
+  if(!item.checked){remainingRecovery.push(item);continue;}
+  if(!item.name||!item.unit||!Number.isInteger(item.packs)||item.packs<=0||!Number.isFinite(item.pack)||item.pack<=0){
+   // Invalid imports must not create inventory out of thin air.
+   remainingRecovery.push(item);continue;
+  }
+  const key=item.name+"|"+item.unit;
+  const current=typeof purchased[key]==="number"&&Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
+  purchased[key]=current+item.packs*item.pack;
+ }
+ return {purchased,remainingRecovery};
+}
