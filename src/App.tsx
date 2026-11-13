@@ -157,10 +157,22 @@ const recoveryFor=(selectedRecipe:Recipe)=>{
  // the next shopping recommendation to avoid adding duplicate packages.
  const queued=new Map<string,number>();
  for(const item of state.restockQueue||[]){
-   // Checked recovery items are still pending until the user records them.
-   // They must be credited against further recommendations, just like unchecked items.
+   // Recovery packages remain pending until explicitly recorded as purchases.
    if(!Number.isFinite(item.packs)||item.packs<=0||!Number.isFinite(item.pack)||item.pack<=0)continue;
    const key=item.name+"|"+item.unit;queued.set(key,(queued.get(key)||0)+item.packs*item.pack);
+ }
+ // The ordinary shopping cart is also pending stock. Include its selected
+ // whole packages when proposing *additional* recovery purchases, without
+ // ever treating them as ingredients available to cook.
+ for(const line of basket){
+   const key=line.name+"|"+line.unit;
+   if(!Number.isFinite(line.pack)||line.pack<=0)continue;
+   const selected=state.cartPackages?.[key];
+   const uniqueName=basket.filter(item=>item.name===line.name).length===1;
+   const checked=state.checked.includes(key)||(uniqueName&&state.checked.includes(line.name));
+   const count=typeof selected==="number"&&Number.isInteger(selected)&&selected>=0
+     ?selected:checked?Math.ceil(Math.max(0,line.qty-(state.purchasedQuantities?.[key]||0))/line.pack-1e-9):0;
+   if(count>0)queued.set(key,(queued.get(key)||0)+count*line.pack);
  }
  let best:{cost:number;unknown:number;lines:{name:string;unit:string;packs:number;pack:number;price:number|null;cost:number|null}[];names:string[]}|null=null;
  const evaluate=(lineup:Recipe[])=>{
