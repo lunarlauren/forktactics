@@ -254,3 +254,13 @@ test("combined recipe ingredient quantities cannot overflow cookability",()=>{
   assert.throws(()=>recipeIngredientAvailability(ingredients,{}),/exceeds supported range/);
   assert.deepEqual(recipeIngredientAvailability([{name:"Rice",unit:"g",qty:3},{name:"Rice",unit:"g",qty:2}],{"Rice|g":5}),{canCook:true,missing:[]});
 });
+
+test("malformed imported grocery rows do not block valid checkout",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5))]);
+  const malformed=[null,undefined,{name:"",unit:"g"},{name:"Beans",unit:null}];
+  const existing={"Rice|g":125};
+  const result=confirmShoppingCart([...malformed,...lines],["Rice|g"],{},existing);
+  assert.deepEqual(result,{"Rice|g":625});
+  assert.deepEqual(existing,{"Rice|g":125});
+  assert.deepEqual(confirmShoppingCart(malformed,[],{},existing),existing);
+});
