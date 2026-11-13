@@ -214,30 +214,30 @@ const days=menuSlots(state.plan.length);const totalCooks=Object.values(state.coo
 function update(f:(s:State)=>State){setState(s=>f(s))}function setInventoryQuantity(key:string,quantity:number){
  if(!key.includes("|")||!Number.isFinite(quantity)||quantity<0)return;
  update(current=>{
-  // Snapshot the inventory *after* all prior cooks. Changing a pantry amount
-  // must not replay those cooks against the manually corrected quantities.
   const remaining=remainingConfirmedStock(
    current.purchasedQuantities||{},current.pantryQuantities||{},current.events,current.tripStartedAt,
    id=>{const recipe=recipes.find(item=>item.id===id);return recipe?scaleMeals([recipe],current.household||2)[0].ingredients:undefined});
-  const pantryQuantities:Record<string,number>={};
-  const purchasedQuantities:Record<string,number>={};
-  for(const [item,raw] of Object.entries(remaining)){
-   const available=item===key?quantity:Math.max(0,raw);
-   if(!Number.isFinite(available)||available<=0.000001)continue;
-   // Preserve confirmed purchases on *other* ingredients. The old editor
-   // erased the entire purchase ledger whenever any one item was edited.
-   // Cap each purchase balance at physically available stock, so decreasing
-   // an item cannot leave phantom purchased inventory behind.
-   const bought=Math.max(0,current.purchasedQuantities?.[item]||0);
-   const purchased=Math.min(available,bought);
-   if(purchased>0.000001)purchasedQuantities[item]=Math.round(purchased*1000000)/1000000;
-   const pantry=available-purchased;
-   if(pantry>0.000001)pantryQuantities[item]=Math.round(pantry*1000000)/1000000;
+  // Adjust only the edited ingredient's ledger balances. Preserve the current
+  // trip boundary and unrelated purchases, ratings, settings and cooking events.
+  const difference=quantity-(remaining[key]||0);
+  if(Math.abs(difference)<=0.000001)return current;
+  const pantryQuantities={...(current.pantryQuantities||{})};
+  const purchasedQuantities={...(current.purchasedQuantities||{})};
+  const pantry=Math.max(0,pantryQuantities[key]||0);
+  const purchased=Math.max(0,purchasedQuantities[key]||0);
+  if(difference>0){
+   pantryQuantities[key]=Math.round((pantry+difference)*1000000)/1000000;
+  }else{
+   // Remove pantry first, then purchased stock. Do not rewrite other items.
+   const remove=Math.min(-difference,pantry+purchased);
+   const pantryUsed=Math.min(pantry,remove);
+   const purchaseUsed=Math.min(purchased,remove-pantryUsed);
+   const nextPantry=Math.round((pantry-pantryUsed)*1000000)/1000000;
+   const nextPurchased=Math.round((purchased-purchaseUsed)*1000000)/1000000;
+   if(nextPantry>0)pantryQuantities[key]=nextPantry;else delete pantryQuantities[key];
+   if(nextPurchased>0)purchasedQuantities[key]=nextPurchased;else delete purchasedQuantities[key];
   }
-  if(quantity>0.000001&&!Object.prototype.hasOwnProperty.call(remaining,key)){
-   pantryQuantities[key]=Math.round(quantity*1000000)/1000000;
-  }
-  return {...current,pantryQuantities,purchasedQuantities,tripStartedAt:new Date().toISOString(),pantry:current.pantry.filter(name=>name!==key.split("|")[0])};
+  return {...current,pantryQuantities,purchasedQuantities,pantry:current.pantry.filter(name=>name!==key.split("|")[0])};
  });
 }
 function clearInventory(){
