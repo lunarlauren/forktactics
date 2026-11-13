@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {priceGroceryBasket,outstandingGroceryEstimate} from "../src/planning-adapter.ts";
+import {priceGroceryBasket,outstandingGroceryEstimate,confirmShoppingCart,checkoutShoppingTrip} from "../src/planning-adapter.ts";
 
 const ingredient=(name,qty,pack,price,unit="g")=>({name,qty,pack,price,unit});
 const meal=(...ingredients)=>({ingredients});
@@ -153,4 +153,36 @@ test("recovery purchases reduce outstanding groceries only after recording",()=>
   assert.deepEqual(outstandingGroceryEstimate(lines,purchased),{knownTotal:5,unknownCount:0});
   const confirmedRecovery={...purchased,"Beans|can":2};
   assert.deepEqual(outstandingGroceryEstimate(lines,confirmedRecovery),{knownTotal:2.5,unknownCount:0});
+});
+
+test("duplicate grocery lines never double-count checked or selected packages",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5))]);
+  const duplicated=[lines[0],{...lines[0]}];
+  assert.deepEqual(confirmShoppingCart(duplicated,["Rice|g"],{},{}),{"Rice|g":1000});
+  assert.deepEqual(confirmShoppingCart(duplicated,[],{"Rice|g":2},{}),{"Rice|g":1000});
+  assert.deepEqual(confirmShoppingCart(duplicated,["Rice"],{},{"Rice|g":250}),{"Rice|g":1250});
+});
+
+test("recovery-only checkout preserves existing stock and unchecked recovery entries",()=>{
+  const recovery=[
+    {name:"Beans",unit:"can",packs:2,pack:1,checked:true},
+    {name:"Rice",unit:"g",packs:1,pack:500,checked:false}
+  ];
+  const existing={"Beans|can":1,"Rice|g":250};
+  const result=checkoutShoppingTrip([],[],{},existing,recovery);
+  assert.deepEqual(result.purchased,{"Beans|can":3,"Rice|g":250});
+  assert.deepEqual(result.remainingRecovery,[recovery[1]]);
+  assert.deepEqual(existing,{"Beans|can":1,"Rice|g":250});
+  assert.deepEqual(recovery[0],{name:"Beans",unit:"can",packs:2,pack:1,checked:true});
+});
+
+test("malformed recovery purchases remain pending without corrupting valid checkout",()=>{
+  const recovery=[
+    {name:"Beans",unit:"can",packs:2,pack:1,checked:true},
+    {name:"Bad",unit:"can",packs:Infinity,pack:1,checked:true},
+    null
+  ];
+  const result=checkoutShoppingTrip([],[],{},{"Beans|can":1},recovery);
+  assert.deepEqual(result.purchased,{"Beans|can":3});
+  assert.deepEqual(result.remainingRecovery,[recovery[1],null]);
 });
