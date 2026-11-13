@@ -156,7 +156,10 @@ const recoveryFor=(selectedRecipe:Recipe)=>{
  // A queued but not yet purchased package is not stock. Credit it against
  // the next shopping recommendation to avoid adding duplicate packages.
  const queued=new Map<string,number>();
- for(const item of state.restockQueue||[])if(!item.checked){
+ for(const item of state.restockQueue||[]){
+   // Checked recovery items are still pending until the user records them.
+   // They must be credited against further recommendations, just like unchecked items.
+   if(!Number.isFinite(item.packs)||item.packs<=0||!Number.isFinite(item.pack)||item.pack<=0)continue;
    const key=item.name+"|"+item.unit;queued.set(key,(queued.get(key)||0)+item.packs*item.pack);
  }
  let best:{cost:number;unknown:number;lines:{name:string;unit:string;packs:number;pack:number;price:number|null;cost:number|null}[];names:string[]}|null=null;
@@ -192,8 +195,18 @@ const recoveryFor=(selectedRecipe:Recipe)=>{
 const queueRecovery=(selectedRecipe:Recipe)=>{
  const recommendation=recoveryFor(selectedRecipe).best;
  if(!recommendation||!recommendation.lines.length){setToast("No additional packages needed for the suggested lineup; review your recorded purchases.");return}
- update(s=>({...s,restockQueue:[...(s.restockQueue||[]),...recommendation.lines.map(line=>({...line,checked:false}))]}));
- setTab("Shop");setToast("Recovery packages added to your shopping list.");
+ update(s=>{
+  // Keep one editable recovery row per ingredient/package size. Repeated
+  // requests must not create duplicate suggestions or discard checked status.
+  const queue=[...(s.restockQueue||[])];
+  for(const line of recommendation.lines){
+   const index=queue.findIndex(item=>item.name===line.name&&item.unit===line.unit&&item.pack===line.pack&&item.price===line.price&&!item.checked);
+   if(index>=0)queue[index]={...queue[index],packs:queue[index].packs+line.packs};
+   else queue.push({...line,checked:false});
+  }
+  return {...s,restockQueue:queue};
+ });
+ setTab("Shop");setToast("Additional recovery packages added without duplicating existing pending groceries.");
 };
 const groceryCheckKey=(i:{name:string;unit:string})=>i.name+"|"+i.unit;const isChecked=(i:{name:string;unit:string})=>{const key=groceryCheckKey(i);return state.cartPackages?.[key]!==undefined?state.cartPackages[key]>0:state.checked.includes(key)||(state.checked.includes(i.name)&&basket.filter(line=>line.name===i.name).length===1)};
 const outstanding=outstandingGroceryEstimate(basket,state.purchasedQuantities||{});const subtotal=outstanding.knownTotal;const unknown=outstanding.unknownCount;const purchasedFor=(i:typeof basket[number])=>{const n=state.purchasedQuantities?.[i.name+"|"+i.unit];return typeof n==="number"&&Number.isFinite(n)&&n>0?n:0};const remainingToBuy=(i:typeof basket[number])=>Math.max(0,i.qty-purchasedFor(i));const remainingPacks=(i:typeof basket[number])=>i.pack>0?Math.ceil(Math.max(0,remainingToBuy(i)/i.pack-1e-9)):null;const completed=(i:typeof basket[number])=>remainingToBuy(i)===0&&!isChecked(i);const purchasedLines=basket.filter(i=>remainingToBuy(i)===0).length;const checkedLines=basket.filter(i=>isChecked(i)).length;const cartPacks=(i:typeof basket[number])=>state.cartPackages?.[groceryCheckKey(i)]??(isChecked(i)?remainingPacks(i)||0:0);const adjustCartPackages=(item:typeof basket[number],delta:number)=>update(previous=>{const key=groceryCheckKey(item);const uniqueName=basket.filter(line=>line.name===item.name).length===1;const legacyChecked=previous.checked.includes(key)||(uniqueName&&previous.checked.includes(item.name));const purchased=previous.purchasedQuantities?.[key]||0;const recommended=item.pack>0?Math.ceil(Math.max(0,item.qty-purchased)/item.pack-1e-9):0;const current=previous.cartPackages?.[key]??(legacyChecked?recommended:0);return {...previous,cartPackages:{...previous.cartPackages,[key]:Math.max(0,current+delta)},checked:previous.checked.filter(x=>x!==key&&x!==item.name)}});const menuConfirmed=state.confirmedPlan===state.plan.join("|")+"#"+(state.shoppingTarget||5);const manuallyChecked=basket.filter(i=>isChecked(i)&&i.qty>purchasedFor(i)&&i.qty>0).length;const tonightOptions=state.plan.map(id=>recipes.find(recipe=>recipe.id===id)).filter((recipe):recipe is Recipe=>Boolean(recipe));
