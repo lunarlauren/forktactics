@@ -1,4 +1,4 @@
-import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds,confirmShoppingCart,checkoutShoppingTrip,retainUnchangedCart,recipeIngredientCostEstimate,cooksInCurrentTrip,resetCookingLedger} from "./planning-adapter";
+import {priceGroceryBasket,outstandingGroceryEstimate,recipeIngredientAvailability,remainingConfirmedStock,shoppingMenuIds,confirmShoppingCart,checkoutShoppingTrip,retainUnchangedCart,recipeIngredientCostEstimate,cooksInCurrentTrip,resetCookingLedger,correctAvailableInventory} from "./planning-adapter";
 import Onboarding,{type Setup} from "./Onboarding";
 import React,{useEffect,useMemo,useState} from "react";
 import {ChefHat,CalendarDays,ShoppingBasket,BookOpen,Settings2,Plus,Check,Lock,Unlock,Shuffle,ChevronRight,ArrowLeft,RotateCcw,Download,Upload,Search,Sparkles,Leaf,Wallet,Info,X,Minus,Heart,Clock,Users,CheckCircle2} from "lucide-react";
@@ -242,26 +242,11 @@ function update(f:(s:State)=>State){setState(s=>f(s))}function setInventoryQuant
   const remaining=remainingConfirmedStock(
    current.purchasedQuantities||{},current.pantryQuantities||{},current.events,current.tripStartedAt,
    id=>{const recipe=recipes.find(item=>item.id===id);return recipe?scaleMeals([recipe],current.household||2)[0].ingredients:undefined});
-  // Adjust only the edited ingredient's ledger balances. Preserve the current
-  // trip boundary and unrelated purchases, ratings, settings and cooking events.
-  const difference=quantity-(remaining[key]||0);
-  if(Math.abs(difference)<=0.000001)return current;
-  const pantryQuantities={...(current.pantryQuantities||{})};
-  const purchasedQuantities={...(current.purchasedQuantities||{})};
-  const pantry=Math.max(0,pantryQuantities[key]||0);
-  const purchased=Math.max(0,purchasedQuantities[key]||0);
-  if(difference>0){
-   pantryQuantities[key]=Math.round((pantry+difference)*1000000)/1000000;
-  }else{
-   // Remove pantry first, then purchased stock. Do not rewrite other items.
-   const remove=Math.min(-difference,pantry+purchased);
-   const pantryUsed=Math.min(pantry,remove);
-   const purchaseUsed=Math.min(purchased,remove-pantryUsed);
-   const nextPantry=Math.round((pantry-pantryUsed)*1000000)/1000000;
-   const nextPurchased=Math.round((purchased-purchaseUsed)*1000000)/1000000;
-   if(nextPantry>0)pantryQuantities[key]=nextPantry;else delete pantryQuantities[key];
-   if(nextPurchased>0)purchasedQuantities[key]=nextPurchased;else delete purchasedQuantities[key];
-  }
+  // Adjust only this ingredient, preserving the current consumption epoch.
+  const {pantryQuantities,purchasedQuantities}=correctAvailableInventory(
+   current.purchasedQuantities||{},current.pantryQuantities||{},remaining,key,quantity);
+  if(pantryQuantities[key]===(current.pantryQuantities||{})[key]&&
+     purchasedQuantities[key]===(current.purchasedQuantities||{})[key])return current;
   // Keep legacy pantry labels and shopping selections for other units intact.
   // A name-only legacy checkmark is ambiguous when the basket has multiple units.
   const ingredientName=key.slice(0,key.lastIndexOf("|"));
