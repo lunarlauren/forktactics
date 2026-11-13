@@ -272,7 +272,7 @@ function update(f:(s:State)=>State){setState(s=>f(s))}function setInventoryQuant
 }
 function clearInventory(){
  if(!window.confirm("Empty all available pantry and purchased stock? Your recipes, shopping list, cooking history and rewards will remain."))return;
- update(current=>({...current,pantryQuantities:{},purchasedQuantities:{},pantry:[],confirmedPlan:"",tripStartedAt:new Date().toISOString()}));
+ update(current=>({...current,pantryQuantities:{},purchasedQuantities:{},pantry:[],confirmedPlan:"",checked:[],cartPackages:{},restockQueue:[],tripStartedAt:new Date().toISOString()}));
  setToast("Available pantry cleared. Confirm shopping again before cooking; recipes and cooking history were kept.");
 }
 function updatePriceSheetValue(key:string,raw:string){update(s=>{const value=raw.trim()===""?null:Number(raw);if(value!==null&&(!Number.isFinite(value)||value<0||(key.endsWith("|pack")&&value<=0)))return s;const name=s.activePriceSheet||"Sample prices";return {...s,priceSheets:{...s.priceSheets,[name]:{...s.priceSheets?.[name],[key]:value===null?null:key.endsWith("|pack")?value:Math.round(value*100)/100}}}})}
