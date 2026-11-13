@@ -236,3 +236,21 @@ test("cart selection alone never creates stock, and confirming extra packages ad
   assert.deepEqual(alreadyPurchased,{"Rice|g":500});
   assert.deepEqual(pending,{"Rice|g":2});
 });
+
+test("legacy checked checkout uses the same stock ledger as package checkout",()=>{
+ const lines=priceGroceryBasket([{ingredients:[
+  {name:"Rice",unit:"g",qty:750,pack:500,price:3},
+  {name:"Milk",unit:"mL",qty:250,pack:1000,price:4},
+  {name:"Milk",unit:"cup",qty:1,pack:2,price:2}
+ ]}]).lines;
+ const existing={"Rice|g":500,"Milk|mL":1000};
+ const checked=["Rice","Milk|cup"];
+ const legacy=confirmCheckedGroceryPurchases(lines,checked,existing);
+ const shared=confirmShoppingCart(lines,checked,{},existing);
+ assert.deepEqual(legacy,shared);
+ assert.deepEqual(shared,{"Rice|g":1000,"Milk|mL":1000,"Milk|cup":2});
+ assert.deepEqual(existing,{"Rice|g":500,"Milk|mL":1000});
+ const explicitZero=confirmShoppingCart(lines,checked,{"Rice|g":0},existing);
+ assert.equal(explicitZero["Rice|g"],500);
+ assert.equal(explicitZero["Milk|cup"],2);
+});
