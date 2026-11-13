@@ -360,7 +360,11 @@ export function correctAvailableInventory(
  const pantryQty=Math.max(0,Number.isFinite(pantry[key])?pantry[key]:0);
  const purchasedQty=Math.max(0,Number.isFinite(purchased[key])?purchased[key]:0);
  if(difference>0){
-  pantryQuantities[key]=Math.round((pantryQty+difference)*1e6)/1e6;
+  // Reject corrections that would overflow the stored stock ledger. Rounding
+  // through micro-units can overflow even when the input itself is finite.
+  const next=pantryQty+difference;
+  if(!Number.isFinite(next)||!Number.isFinite(next*1e6))throw new Error("Pantry correction exceeds supported range");
+  pantryQuantities[key]=Math.round(next*1e6)/1e6;
  }else{
   const removal=Math.min(-difference,pantryQty+purchasedQty);
   const fromPantry=Math.min(pantryQty,removal);
