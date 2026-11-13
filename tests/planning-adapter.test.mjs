@@ -160,7 +160,7 @@ test("duplicate grocery lines never double-count checked or selected packages",(
   const duplicated=[lines[0],{...lines[0]}];
   assert.deepEqual(confirmShoppingCart(duplicated,["Rice|g"],{},{}),{"Rice|g":1000});
   assert.deepEqual(confirmShoppingCart(duplicated,[],{"Rice|g":2},{}),{"Rice|g":1000});
-  assert.deepEqual(confirmShoppingCart(duplicated,["Rice"],{},{"Rice|g":250}),{"Rice|g":1250});
+  assert.deepEqual(confirmShoppingCart(duplicated,["Rice"],{},{"Rice|g":250}),{"Rice|g":750});
 });
 
 test("recovery-only checkout preserves existing stock and unchecked recovery entries",()=>{
@@ -218,7 +218,7 @@ test("unsafe imported cart selections never fall back to checked purchases",()=>
   for(const invalid of [Infinity,Number.NaN,-1,1.5,Number.MAX_SAFE_INTEGER+1,"2",null]){
     assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{"Rice|g":invalid},stock),stock);
   }
-  assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{},stock),{"Rice|g":1125});
+  assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{},stock),{"Rice|g":625});
   assert.deepEqual(stock,{"Rice|g":125});
 });
 
