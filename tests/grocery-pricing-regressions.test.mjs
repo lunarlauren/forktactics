@@ -64,6 +64,10 @@ test("zero-quantity ingredients cannot introduce false price conflicts",()=>{
 test("invalid quantities and package overrides never create negative or nonfinite costs",()=>{
   assert.throws(()=>priceGroceryBasket([meal(ingredient("Rice",-1,500,2))]),/Invalid grocery/);
   const result=priceGroceryBasket([meal(ingredient("Rice",600,500,2))],{"Rice|g|pack":-1});
-  assert.equal(result.lines[0].pack,500);
-  assert.equal(result.knownTotal,4);
+  // A malformed explicit override must not silently reuse the recipe price.
+  // The shopper needs to correct the package size before the cost is trusted.
+  assert.equal(result.lines[0].pack,0);
+  assert.equal(result.lines[0].cost,null);
+  assert.equal(result.knownTotal,0);
+  assert.equal(result.unknownCount,1);
 });
