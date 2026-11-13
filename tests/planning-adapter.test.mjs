@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {priceGroceryBasket,outstandingGroceryEstimate,confirmShoppingCart,checkoutShoppingTrip,retainUnchangedCart} from "../src/planning-adapter.ts";
+import {priceGroceryBasket,outstandingGroceryEstimate,confirmShoppingCart,checkoutShoppingTrip,retainUnchangedCart,recipeIngredientAvailability} from "../src/planning-adapter.ts";
 
 const ingredient=(name,qty,pack,price,unit="g")=>({name,qty,pack,price,unit});
 const meal=(...ingredients)=>({ingredients});
@@ -246,4 +246,11 @@ test("retained cart selections require safe counts and unchanged grocery lines",
 
   const changed=next.map(line=>line.name==="Rice"?{...line,pack:1000}:line);
   assert.deepEqual(retainUnchangedCart(lines,changed,cart),{"Beans|can":2});
+});
+
+
+test("combined recipe ingredient quantities cannot overflow cookability",()=>{
+  const ingredients=[{name:"Rice",unit:"g",qty:1e308},{name:"Rice",unit:"g",qty:1e308}];
+  assert.throws(()=>recipeIngredientAvailability(ingredients,{}),/exceeds supported range/);
+  assert.deepEqual(recipeIngredientAvailability([{name:"Rice",unit:"g",qty:3},{name:"Rice",unit:"g",qty:2}],{"Rice|g":5}),{canCook:true,missing:[]});
 });
