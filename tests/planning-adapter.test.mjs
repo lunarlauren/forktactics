@@ -204,3 +204,20 @@ test("repeated checkout with cleared selections does not record purchases twice"
   assert.deepEqual(second.remainingRecovery,[recovery[1]]);
   assert.deepEqual(existing,{"Beans|can":1,"Rice|g":175});
 });
+
+test("explicit zero cart selection overrides a legacy checked grocery line",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5))]);
+  const stock={"Rice|g":125};
+  assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{"Rice|g":0},stock),stock);
+  assert.deepEqual(stock,{"Rice|g":125});
+});
+
+test("unsafe imported cart selections never fall back to checked purchases",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5))]);
+  const stock={"Rice|g":125};
+  for(const invalid of [Infinity,Number.NaN,-1,1.5,Number.MAX_SAFE_INTEGER+1,"2",null]){
+    assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{"Rice|g":invalid},stock),stock);
+  }
+  assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{},stock),{"Rice|g":1125});
+  assert.deepEqual(stock,{"Rice|g":125});
+});
