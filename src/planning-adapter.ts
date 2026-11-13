@@ -146,7 +146,9 @@ export function recipeIngredientAvailability(
     // Recipe quantities may be fractional (e.g. 0.1 + 0.2). Do not
     // block cooking because of sub-micro-unit floating-point noise.
     const shortfall=Math.max(0,item.qty-available);
-    if(shortfall>1e-6)missing.push({name:item.name,unit:item.unit,qty:shortfall});
+    // A tiny but genuinely missing ingredient still matters when stock is zero.
+    // Tolerate floating-point dust only when some stock is actually recorded.
+    if(shortfall>0&&(available<=0||shortfall>1e-6))missing.push({name:item.name,unit:item.unit,qty:shortfall});
   }
   return {canCook:missing.length===0,missing};
 }
