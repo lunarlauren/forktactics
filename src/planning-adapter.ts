@@ -296,7 +296,7 @@ export function retainUnchangedCart(
   const replacement=next.get(key);
   const count=cart[key];
   if(replacement&&replacement.qty===line.qty&&replacement.pack===line.pack&&
-     Number.isInteger(count)&&count>=0)kept[key]=count;
+     Number.isSafeInteger(count)&&count>=0)kept[key]=count;
  }
  return kept;
 }
