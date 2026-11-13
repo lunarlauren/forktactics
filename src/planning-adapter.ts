@@ -290,7 +290,8 @@ export function confirmShoppingCart(
  for(const line of lines){
   // Imported grocery lists can contain null or malformed rows. Ignore them
   // without blocking valid purchases or changing persisted shopping data.
-  if(!line||typeof line.name!=="string"||!line.name.trim()||typeof line.unit!=="string"||!line.unit.trim())continue;
+  if(!line||typeof line.name!=="string"||!line.name.trim()||line.name.includes("|")||
+     typeof line.unit!=="string"||!line.unit.trim()||line.unit.includes("|"))continue;
   const key=line.name+"|"+line.unit;
   if(seenKeys.has(key))continue;
   seenKeys.add(key);
@@ -300,7 +301,8 @@ export function confirmShoppingCart(
  for(const line of lines){
   // Imported grocery lists can contain null or malformed rows. Ignore them
   // without blocking valid purchases or changing persisted shopping data.
-  if(!line||typeof line.name!=="string"||!line.name.trim()||typeof line.unit!=="string"||!line.unit.trim())continue;
+  if(!line||typeof line.name!=="string"||!line.name.trim()||line.name.includes("|")||
+     typeof line.unit!=="string"||!line.unit.trim()||line.unit.includes("|"))continue;
   const key=line.name+"|"+line.unit;
   if(seenKeys.has(key))continue;
   seenKeys.add(key);
