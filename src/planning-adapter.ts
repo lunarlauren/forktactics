@@ -329,7 +329,7 @@ export function checkoutShoppingTrip(
   if(!item.checked){remainingRecovery.push(item);continue;}
   if(typeof item.name!=="string"||!item.name.trim()||item.name.includes("|")||
      typeof item.unit!=="string"||!item.unit.trim()||item.unit.includes("|")||
-     !Number.isInteger(item.packs)||item.packs<=0||!Number.isFinite(item.pack)||item.pack<=0){
+     !Number.isSafeInteger(item.packs)||item.packs<=0||!Number.isFinite(item.pack)||item.pack<=0){
    // Invalid imports must not create inventory out of thin air.
    remainingRecovery.push(item);continue;
   }
