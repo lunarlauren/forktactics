@@ -89,7 +89,17 @@ export function outstandingGroceryEstimate(lines:GroceryLine[],purchasedQuantiti
       unknownCount++;
       continue;
     }
-    knownTotalCents+=Math.ceil(Math.max(0,remaining/line.pack-1e-9))*Math.round(line.price*100);
+    const packs=Math.ceil(Math.max(0,remaining/line.pack-1e-9));
+    const cents=Math.round(line.price*100);
+    const lineCents=packs*cents;
+    // An imported package size or price can overflow an otherwise valid
+    // shopping estimate. Mark it unknown instead of displaying $0/Infinity.
+    if(!Number.isSafeInteger(packs)||!Number.isSafeInteger(cents)||
+       !Number.isSafeInteger(lineCents)||!Number.isSafeInteger(knownTotalCents+lineCents)){
+      unknownCount++;
+      continue;
+    }
+    knownTotalCents+=lineCents;
   }
   return {knownTotal:Math.round(knownTotalCents)/100,unknownCount};
 }
