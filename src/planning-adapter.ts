@@ -229,9 +229,20 @@ export function confirmShoppingCart(
  // Count names once so legacy name-only checkmarks remain unambiguous without
  // rescanning the entire basket for every ingredient.
  const nameCounts=new Map<string,number>();
- for(const line of lines)nameCounts.set(line.name,(nameCounts.get(line.name)||0)+1);
+ const seenKeys=new Set<string>();
+ // A basket is normally merged by ingredient/unit, but legacy or imported
+ // duplicate lines must not purchase the same selected packages twice.
  for(const line of lines){
   const key=line.name+"|"+line.unit;
+  if(seenKeys.has(key))continue;
+  seenKeys.add(key);
+  nameCounts.set(line.name,(nameCounts.get(line.name)||0)+1);
+ }
+ seenKeys.clear();
+ for(const line of lines){
+  const key=line.name+"|"+line.unit;
+  if(seenKeys.has(key))continue;
+  seenKeys.add(key);
   const uniqueName=nameCounts.get(line.name)===1;
   const selected=selectedPackages[key];
   const checkedLine=checked.includes(key)||(uniqueName&&checked.includes(line.name));
