@@ -353,3 +353,21 @@ test("clearing cooking history preserves small positive pantry leftovers",()=>{
   assert.deepEqual(original,{"Saffron|g":0.0000008,"Rice|g":2});
   assert.deepEqual(recipeIngredientAvailability([{name:"Saffron",unit:"g",qty:0.0000005}],result.pantryQuantities),{canCook:true,missing:[]});
 });
+
+test("malformed imported grocery requirements cannot create stock at checkout",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5))]);
+  const valid=lines[0];
+  const malformed=[
+    {...valid,qty:NaN},
+    {...valid,qty:-1},
+    {...valid,qty:Infinity},
+    {...valid,pack:0},
+    {...valid,pack:NaN},
+    {...valid,pack:Infinity}
+  ];
+  for(const row of malformed){
+    assert.deepEqual(confirmShoppingCart([row],["Rice|g"],{"Rice|g":2},{}),{});
+    assert.deepEqual(confirmShoppingCart([row],["Rice|g"],{},{}),{});
+  }
+  assert.deepEqual(confirmShoppingCart(lines,["Rice|g"],{},{}),{"Rice|g":1000});
+});
