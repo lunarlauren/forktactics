@@ -327,3 +327,13 @@ test("conflicting duplicate grocery rows cannot retain stale cart selections",()
   assert.deepEqual(retainUnchangedCart([...lines,{...rice}],lines,cart),cart);
   assert.deepEqual(cart,{"Rice|g":2,"Beans|can":1});
 });
+
+test("partially stocked tiny ingredients remain unavailable until fully stocked",()=>{
+  const ingredient=[{name:"Saffron",unit:"g",qty:2e-7}];
+  assert.deepEqual(recipeIngredientAvailability(ingredient,{"Saffron|g":1e-7}),{
+    canCook:false,missing:[{name:"Saffron",unit:"g",qty:1e-7}]
+  });
+  assert.deepEqual(recipeIngredientAvailability(ingredient,{"Saffron|g":2e-7}),{canCook:true,missing:[]});
+  // Arithmetic noise around an otherwise complete quantity is not a shortage.
+  assert.deepEqual(recipeIngredientAvailability([{name:"Rice",unit:"g",qty:0.3}],{"Rice|g":0.1+0.2}),{canCook:true,missing:[]});
+});
