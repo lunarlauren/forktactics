@@ -27,6 +27,10 @@ test("tiny positive unmet quantity still requires one package",()=>{
   assert.equal(result.lines[0].cost,12);
   assert.equal(result.knownTotal,12);
 });
+test("tiny positive outstanding groceries still cost one package",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Saffron",0.00000001,1,12))]);
+  assert.deepEqual(outstandingGroceryEstimate(lines),{knownTotal:12,unknownCount:0});
+});
 test("fully stocked pantry needs no price or packages",()=>{
   const result=priceGroceryBasket([meal(ingredient("Rice",200,500,null))],{},{"Rice|g":1000});
   assert.equal(result.knownTotal,0);
