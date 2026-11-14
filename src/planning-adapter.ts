@@ -333,9 +333,12 @@ export function retainUnchangedCart(
  after:GroceryLine[],
  cart:Record<string,number>
 ):Record<string,number>{
- const next=new Map(after.map(line=>[line.name+"|"+line.unit,line]));
+ // Imported baskets may contain null rows; ignore them rather than crashing
+ // menu regeneration or accidentally retaining a stale cart selection.
+ const next=new Map(after.filter(line=>line&&typeof line.name==="string"&&typeof line.unit==="string").map(line=>[line.name+"|"+line.unit,line]));
  const kept:Record<string,number>={};
  for(const line of before){
+  if(!line||typeof line.name!=="string"||typeof line.unit!=="string")continue;
   const key=line.name+"|"+line.unit;
   const replacement=next.get(key);
   const count=cart[key];
