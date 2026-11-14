@@ -304,6 +304,8 @@ export function confirmShoppingCart(
   // without blocking valid purchases or changing persisted shopping data.
   if(!line||typeof line.name!=="string"||!line.name.trim()||line.name.includes("|")||
      typeof line.unit!=="string"||!line.unit.trim()||line.unit.includes("|"))continue;
+  if(typeof line.qty!=="number"||!Number.isFinite(line.qty)||line.qty<0||
+     typeof line.pack!=="number"||!Number.isFinite(line.pack)||line.pack<=0)continue;
   const key=line.name+"|"+line.unit;
   if(seenKeys.has(key))continue;
   seenKeys.add(key);
@@ -315,14 +317,13 @@ export function confirmShoppingCart(
   // without blocking valid purchases or changing persisted shopping data.
   if(!line||typeof line.name!=="string"||!line.name.trim()||line.name.includes("|")||
      typeof line.unit!=="string"||!line.unit.trim()||line.unit.includes("|"))continue;
+  // Validate before deduplicating so an invalid imported row cannot
+  // block a later valid row for the same ingredient.
+  if(typeof line.qty!=="number"||!Number.isFinite(line.qty)||line.qty<0||
+     typeof line.pack!=="number"||!Number.isFinite(line.pack)||line.pack<=0)continue;
   const key=line.name+"|"+line.unit;
   if(seenKeys.has(key))continue;
   seenKeys.add(key);
-  // A malformed imported row must never turn a checked box or stale cart
-  // selection into inventory. Only valid positive package sizes and finite
-  // nonnegative requirements can be purchased.
-  if(typeof line.qty!=="number"||!Number.isFinite(line.qty)||line.qty<0||
-     typeof line.pack!=="number"||!Number.isFinite(line.pack)||line.pack<=0)continue;
   const uniqueName=nameCounts.get(line.name)===1;
   const selected=selectedPackages[key];
   const checkedLine=checked.includes(key)||(uniqueName&&checked.includes(line.name));
