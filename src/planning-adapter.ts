@@ -318,7 +318,10 @@ export function confirmShoppingCart(
   const selected=selectedPackages[key];
   const checkedLine=checked.includes(key)||(uniqueName&&checked.includes(line.name));
   const previous=Number.isFinite(purchased[key])&&purchased[key]>0?purchased[key]:0;
-  const defaultPacks=line.pack>0?Math.ceil(Math.max(0,line.qty-previous)/line.pack-1e-9):0;
+  const unmet=Math.max(0,line.qty-previous);
+  // Even tiny positive unmet quantities require a real package at checkout.
+  // Match basket pricing so a checked line cannot silently buy zero stock.
+  const defaultPacks=line.pack>0&&unmet>0?Math.max(1,Math.ceil(Math.max(0,unmet/line.pack-1e-9))):0;
   // An explicit cart quantity is authoritative. Invalid imported values must
   // not fall back to a checked line and accidentally purchase extra packages.
   const hasSelection=Object.prototype.hasOwnProperty.call(selectedPackages,key);
