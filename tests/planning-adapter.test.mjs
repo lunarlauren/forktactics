@@ -296,3 +296,17 @@ test("malformed imported grocery rows cannot crash cart retention",()=>{
   assert.deepEqual(retainUnchangedCart([null,...lines],[null],cart),{});
   assert.deepEqual(cart,{"Rice|g":2});
 });
+
+test("ambiguous imported grocery keys are never retained as cart selections",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5))]);
+  const malformed=[
+    {...lines[0],name:"Rice|g",unit:"bag"},
+    {...lines[0],name:"Rice",unit:"g|bag"},
+    {...lines[0],name:" ",unit:"g"},
+    {...lines[0],name:"Rice",unit:" "}
+  ];
+  const cart={"Rice|g":2,"Rice|g|bag":3," |g":4,"Rice| ":5};
+  assert.deepEqual(retainUnchangedCart([...malformed,...lines],[...malformed,...lines],cart),{"Rice|g":2});
+  assert.deepEqual(retainUnchangedCart([...lines],[...malformed],cart),{});
+  assert.deepEqual(cart,{"Rice|g":2,"Rice|g|bag":3," |g":4,"Rice| ":5});
+});
