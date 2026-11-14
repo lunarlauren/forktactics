@@ -4,8 +4,8 @@ type Option={id:string;name:string;subtitle:string;emoji:string;category:string}
 export default function Onboarding({recipes,onComplete,existing}:{recipes:Option[];onComplete:(setup:Setup)=>void;existing?:Setup}){
  const [step,setStep]=useState(0),[index,setIndex]=useState(()=>{const firstUnrated=recipes.findIndex(item=>!existing?.likes.includes(item.id)&&!existing?.dislikes.includes(item.id));return firstUnrated<0?0:firstUnrated;}),[likes,setLikes]=useState<string[]>(existing?.likes??[]),[dislikes,setDislikes]=useState<string[]>(existing?.dislikes??[]),[budgetDraft,setBudgetDraft]=useState(String(existing?.budget??75)),[householdDraft,setHouseholdDraft]=useState(String(existing?.household??2));
  const householdInputValid=householdDraft.trim()!==""&&Number.isInteger(Number(householdDraft))&&Number(householdDraft)>=1&&Number(householdDraft)<=30;
- const budgetCents=Number(budgetDraft)*100;
- const budgetInputValid=budgetDraft.trim()!==""&&Number.isFinite(Number(budgetDraft))&&Number(budgetDraft)>=0&&Number.isSafeInteger(budgetCents)&&Math.round(budgetCents)===budgetCents;
+ const budgetCents=Math.round(Number(budgetDraft)*100);
+ const budgetInputValid=/^(?:\d+)(?:\.\d{0,2})?$/.test(budgetDraft.trim())&&Number.isSafeInteger(budgetCents)&&Number.isFinite(Number(budgetDraft));
  const hasRatingStep=recipes.length>0;
  const recipe=recipes[index];
  const ratedCount=recipes.filter(item=>likes.includes(item.id)||dislikes.includes(item.id)).length;
