@@ -335,10 +335,11 @@ export function retainUnchangedCart(
 ):Record<string,number>{
  // Imported baskets may contain null rows; ignore them rather than crashing
  // menu regeneration or accidentally retaining a stale cart selection.
- const next=new Map(after.filter(line=>line&&typeof line.name==="string"&&typeof line.unit==="string").map(line=>[line.name+"|"+line.unit,line]));
+ const next=new Map(after.filter(line=>line&&typeof line.name==="string"&&!!line.name.trim()&&!line.name.includes("|")&&typeof line.unit==="string"&&!!line.unit.trim()&&!line.unit.includes("|")).map(line=>[line.name+"|"+line.unit,line]));
  const kept:Record<string,number>={};
  for(const line of before){
-  if(!line||typeof line.name!=="string"||typeof line.unit!=="string")continue;
+  if(!line||typeof line.name!=="string"||!line.name.trim()||line.name.includes("|")||
+     typeof line.unit!=="string"||!line.unit.trim()||line.unit.includes("|"))continue;
   const key=line.name+"|"+line.unit;
   const replacement=next.get(key);
   const count=cart[key];
