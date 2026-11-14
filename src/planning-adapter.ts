@@ -392,9 +392,11 @@ export function resetCookingLedger(
  resetAt:string
 ):{pantryQuantities:Record<string,number>;purchasedQuantities:Record<string,number>;tripStartedAt:string}{
  const remaining=remainingConfirmedStock(purchased,pantry,events,tripStartedAt,requirements);
+ // Preserve every finite positive remainder, including small recipe quantities.
+ // Rounding to six decimals or dropping micro-quantities can erase legitimate
+ // stock during a history reset and incorrectly block the next cook.
  const pantryQuantities=Object.fromEntries(Object.entries(remaining)
-  .filter(([,qty])=>Number.isFinite(qty)&&qty>0.000001)
-  .map(([key,qty])=>[key,Math.round(qty*1000000)/1000000]));
+  .filter(([,qty])=>Number.isFinite(qty)&&qty>0));
  return {pantryQuantities,purchasedQuantities:{},tripStartedAt:resetAt};
 }
 
