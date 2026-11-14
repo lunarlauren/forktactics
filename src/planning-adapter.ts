@@ -102,12 +102,16 @@ export function outstandingGroceryEstimate(lines:GroceryLine[],purchasedQuantiti
     // point residues. A fully purchased ingredient must not remain on the
     // outstanding shopping bill because of arithmetic dust.
     const remaining=Math.max(0,line.qty-purchased);
-    if(remaining<=1e-6)continue;
+    // Only skip genuine floating-point residue after a recorded purchase.
+    // Tiny positive requirements with no purchase still need a package.
+    const dust=purchased>0?Number.EPSILON*Math.max(Math.abs(line.qty),Math.abs(purchased))*4:0;
+    if(remaining<=dust)continue;
     if(!Number.isFinite(line.pack)||line.pack<=0||line.price===null||!Number.isFinite(line.price)||line.price<0){
       unknownCount++;
       continue;
     }
-    // A positive outstanding quantity always requires at least one package.\n    const packs=Math.max(1,Math.ceil(Math.max(0,remaining/line.pack-1e-9)));
+    // A positive outstanding quantity always requires at least one package.
+    const packs=Math.max(1,Math.ceil(Math.max(0,remaining/line.pack-1e-9)));
     const cents=Math.round(line.price*100);
     const lineCents=packs*cents;
     // An imported package size or price can overflow an otherwise valid
