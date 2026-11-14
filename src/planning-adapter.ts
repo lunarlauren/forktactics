@@ -337,15 +337,32 @@ export function retainUnchangedCart(
 ):Record<string,number>{
  // Imported baskets may contain null rows; ignore them rather than crashing
  // menu regeneration or accidentally retaining a stale cart selection.
- const next=new Map(after.filter(line=>line&&typeof line.name==="string"&&!!line.name.trim()&&!line.name.includes("|")&&typeof line.unit==="string"&&!!line.unit.trim()&&!line.unit.includes("|")).map(line=>[line.name+"|"+line.unit,line]));
+ const valid=(line:GroceryLine)=>line&&typeof line.name==="string"&&!!line.name.trim()&&!line.name.includes("|")&&typeof line.unit==="string"&&!!line.unit.trim()&&!line.unit.includes("|");
+ const next=new Map<string,GroceryLine>();
+ const ambiguous=new Set<string>();
+ for(const line of after){
+  if(!valid(line))continue;
+  const key=line.name+"|"+line.unit;
+  const previous=next.get(key);
+  if(previous&&(previous.qty!==line.qty||previous.pack!==line.pack))ambiguous.add(key);
+  next.set(key,line);
+ }
  const kept:Record<string,number>={};
+ const seenBefore=new Map<string,GroceryLine>();
+ for(const line of before){
+  if(!valid(line))continue;
+  const key=line.name+"|"+line.unit;
+  const previous=seenBefore.get(key);
+  if(previous&&(previous.qty!==line.qty||previous.pack!==line.pack))ambiguous.add(key);
+  seenBefore.set(key,line);
+ }
  for(const line of before){
   if(!line||typeof line.name!=="string"||!line.name.trim()||line.name.includes("|")||
      typeof line.unit!=="string"||!line.unit.trim()||line.unit.includes("|"))continue;
   const key=line.name+"|"+line.unit;
   const replacement=next.get(key);
   const count=cart[key];
-  if(replacement&&replacement.qty===line.qty&&replacement.pack===line.pack&&
+  if(!ambiguous.has(key)&&replacement&&replacement.qty===line.qty&&replacement.pack===line.pack&&
      Number.isSafeInteger(count)&&count>=0)kept[key]=count;
  }
  return kept;
