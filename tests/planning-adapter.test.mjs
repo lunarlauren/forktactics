@@ -316,3 +316,14 @@ test("ambiguous imported grocery keys are never retained as cart selections",()=
   assert.deepEqual(retainUnchangedCart([...lines],[...malformed],cart),{});
   assert.deepEqual(cart,{"Rice|g":2,"Rice|g|bag":3," |g":4,"Rice| ":5});
 });
+
+test("conflicting duplicate grocery rows cannot retain stale cart selections",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5),ingredient("Beans",2,1,1.25,"can"))]);
+  const rice=lines.find(line=>line.name==="Rice");
+  const cart={"Rice|g":2,"Beans|can":1};
+  const changed={...rice,qty:700};
+  assert.deepEqual(retainUnchangedCart(lines,[...lines,changed],cart),{"Beans|can":1});
+  assert.deepEqual(retainUnchangedCart([...lines,changed],lines,cart),{"Beans|can":1});
+  assert.deepEqual(retainUnchangedCart([...lines,{...rice}],lines,cart),cart);
+  assert.deepEqual(cart,{"Rice|g":2,"Beans|can":1});
+});
