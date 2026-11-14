@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {priceGroceryBasket,outstandingGroceryEstimate,confirmShoppingCart,checkoutShoppingTrip,retainUnchangedCart,recipeIngredientAvailability} from "../src/planning-adapter.ts";
+import {priceGroceryBasket,outstandingGroceryEstimate,confirmShoppingCart,checkoutShoppingTrip,retainUnchangedCart,recipeIngredientAvailability,resetCookingLedger} from "../src/planning-adapter.ts";
 
 const ingredient=(name,qty,pack,price,unit="g")=>({name,qty,pack,price,unit});
 const meal=(...ingredients)=>({ingredients});
@@ -340,4 +340,16 @@ test("partially stocked tiny ingredients remain unavailable until fully stocked"
   assert.deepEqual(recipeIngredientAvailability(ingredient,{"Saffron|g":2e-7}),{canCook:true,missing:[]});
   // Arithmetic noise around an otherwise complete quantity is not a shortage.
   assert.deepEqual(recipeIngredientAvailability([{name:"Rice",unit:"g",qty:0.3}],{"Rice|g":0.1+0.2}),{canCook:true,missing:[]});
+});
+
+test("clearing cooking history preserves small positive pantry leftovers",()=>{
+  const original={"Saffron|g":0.0000008,"Rice|g":2};
+  const result=resetCookingLedger({},original,[
+    {recipe:"saffron-dish",at:"2026-11-14T10:00:00Z",ingredients:[{name:"Saffron",unit:"g",qty:0.0000003}]}
+  ],"2026-11-14T09:00:00Z",()=>[], "2026-11-14T11:00:00Z");
+  assert.ok(Math.abs(result.pantryQuantities["Saffron|g"]-0.0000005)<1e-18);
+  assert.equal(result.pantryQuantities["Rice|g"],2);
+  assert.deepEqual(result.purchasedQuantities,{});
+  assert.deepEqual(original,{"Saffron|g":0.0000008,"Rice|g":2});
+  assert.deepEqual(recipeIngredientAvailability([{name:"Saffron",unit:"g",qty:0.0000005}],result.pantryQuantities),{canCook:true,missing:[]});
 });
