@@ -288,3 +288,11 @@ test("tiny genuinely missing ingredients still block cooking",()=>{
   // Preserve the established tolerance for rounding dust in recorded stock.
   assert.deepEqual(recipeIngredientAvailability([{name:"Rice",unit:"g",qty:0.3}],{"Rice|g":0.1+0.2}),{canCook:true,missing:[]});
 });
+
+test("malformed imported grocery rows cannot crash cart retention",()=>{
+  const {lines}=priceGroceryBasket([meal(ingredient("Rice",600,500,2.5))]);
+  const cart={"Rice|g":2};
+  assert.deepEqual(retainUnchangedCart([null,...lines],[undefined,...lines],cart),cart);
+  assert.deepEqual(retainUnchangedCart([null,...lines],[null],cart),{});
+  assert.deepEqual(cart,{"Rice|g":2});
+});
