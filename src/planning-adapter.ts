@@ -450,21 +450,23 @@ export function correctAvailableInventory(
  const difference=desired-current;
  const purchasedQuantities={...purchased};
  const pantryQuantities={...pantry};
- if(Math.abs(difference)<=0.000001)return {purchasedQuantities,pantryQuantities};
+ // Every positive quantity matters, including sub-micro-unit recipe amounts.
+ // A fixed tolerance silently discards legitimate pantry edits.
+ if(difference===0)return {purchasedQuantities,pantryQuantities};
  const pantryQty=Math.max(0,Number.isFinite(pantry[key])?pantry[key]:0);
  const purchasedQty=Math.max(0,Number.isFinite(purchased[key])?purchased[key]:0);
  if(difference>0){
-  // Reject corrections that would overflow the stored stock ledger. Rounding
-  // through micro-units can overflow even when the input itself is finite.
+  // Keep fractional stock exactly as entered; micro-unit rounding could
+  // turn a real correction into zero and make a cook incorrectly unavailable.
   const next=pantryQty+difference;
-  if(!Number.isFinite(next)||!Number.isFinite(next*1e6))throw new Error("Pantry correction exceeds supported range");
-  pantryQuantities[key]=Math.round(next*1e6)/1e6;
+  if(!Number.isFinite(next))throw new Error("Pantry correction exceeds supported range");
+  pantryQuantities[key]=next;
  }else{
   const removal=Math.min(-difference,pantryQty+purchasedQty);
   const fromPantry=Math.min(pantryQty,removal);
   const fromPurchased=Math.min(purchasedQty,removal-fromPantry);
-  const nextPantry=Math.round((pantryQty-fromPantry)*1e6)/1e6;
-  const nextPurchased=Math.round((purchasedQty-fromPurchased)*1e6)/1e6;
+  const nextPantry=pantryQty-fromPantry;
+  const nextPurchased=purchasedQty-fromPurchased;
   if(nextPantry>0)pantryQuantities[key]=nextPantry;else delete pantryQuantities[key];
   if(nextPurchased>0)purchasedQuantities[key]=nextPurchased;else delete purchasedQuantities[key];
  }
