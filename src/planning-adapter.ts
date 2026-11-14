@@ -107,7 +107,7 @@ export function outstandingGroceryEstimate(lines:GroceryLine[],purchasedQuantiti
       unknownCount++;
       continue;
     }
-    const packs=Math.ceil(Math.max(0,remaining/line.pack-1e-9));
+    // A positive outstanding quantity always requires at least one package.\n    const packs=Math.max(1,Math.ceil(Math.max(0,remaining/line.pack-1e-9)));
     const cents=Math.round(line.price*100);
     const lineCents=packs*cents;
     // An imported package size or price can overflow an otherwise valid
