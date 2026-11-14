@@ -150,7 +150,11 @@ export function recipeIngredientAvailability(
     const shortfall=Math.max(0,item.qty-available);
     // A tiny but genuinely missing ingredient still matters when stock is zero.
     // Tolerate floating-point dust only when some stock is actually recorded.
-    if(shortfall>0&&(available<=0||shortfall>1e-6))missing.push({name:item.name,unit:item.unit,qty:shortfall});
+    // Only ignore differences at floating-point precision for quantities of this
+    // magnitude. A fixed 1e-6 allowance incorrectly treated small, genuinely
+    // missing amounts as available whenever the pantry had any stock.
+    const roundingDust=Number.EPSILON*Math.max(Math.abs(item.qty),Math.abs(available))*4;
+    if(shortfall>roundingDust)missing.push({name:item.name,unit:item.unit,qty:shortfall});
   }
   return {canCook:missing.length===0,missing};
 }
