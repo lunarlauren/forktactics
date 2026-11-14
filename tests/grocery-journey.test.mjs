@@ -254,3 +254,26 @@ test("legacy checked checkout uses the same stock ledger as package checkout",()
  assert.equal(explicitZero["Rice|g"],500);
  assert.equal(explicitZero["Milk|cup"],2);
 });
+
+
+test("malformed duplicate grocery rows cannot hide valid checked purchases",()=>{
+ const valid={name:"Rice",unit:"g",qty:350,pack:500,price:3,packs:1};
+ const malformed=[
+  {...valid,qty:Number.NaN},
+  {...valid,pack:0},
+  {...valid,qty:-1},
+  {...valid,pack:Number.POSITIVE_INFINITY}
+ ];
+ // Legacy name-only checkmarks must still resolve to the one valid unit.
+ assert.deepEqual(confirmShoppingCart([...malformed,valid],["Rice"],{},{}),{"Rice|g":500});
+ // Explicit package selections must not be swallowed by malformed rows.
+ assert.deepEqual(confirmShoppingCart([...malformed,valid],[],{"Rice|g":2},{}),{"Rice|g":1000});
+ // Repeated valid rows must not double-credit purchased stock.
+ assert.deepEqual(confirmShoppingCart([...malformed,valid,valid],["Rice|g"],{},{}),{"Rice|g":500});
+ // A previously confirmed purchase is retained and incremented only once.
+ assert.deepEqual(confirmShoppingCart([...malformed,valid],[],{"Rice|g":1},{"Rice|g":500}),{"Rice|g":1000});
+ const cooked=[{recipe:"rice-bowl",at:"2026-11-14T12:00:00Z",ingredients:[{name:"Rice",unit:"g",qty:350}]}];
+ const stock=remainingConfirmedStock({"Rice|g":500},{},cooked,"2026-11-14T11:00:00Z",()=>undefined);
+ assert.equal(stock["Rice|g"],150);
+ assert.equal(recipeIngredientAvailability([{name:"Rice",unit:"g",qty:350}],stock).canCook,false);
+});
