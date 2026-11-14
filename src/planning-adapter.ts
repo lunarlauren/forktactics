@@ -54,7 +54,9 @@ export function priceGroceryBasket(meals:{ingredients:GroceryInput[]}[],override
     // Floating-point dust must not turn one full package into two.
     // An extremely small imported pack size can overflow the package count,
     // which must never become a purchasable cart selection.
-    const rawPacks=pack>0?Math.ceil(Math.max(0,qty/pack-1e-9)):0;
+    // Any positive unmet quantity requires at least one purchasable package.
+    // The floating-point tolerance only prevents an extra package at an exact boundary.
+    const rawPacks=pack>0&&qty>0?Math.max(1,Math.ceil(Math.max(0,qty/pack-1e-9))):0;
     const packs=Number.isSafeInteger(rawPacks)?rawPacks:0;
     const validPackageCount=pack>0&&Number.isSafeInteger(rawPacks);
     const validPrice=price!==null&&typeof price==="number"&&Number.isFinite(price)&&price>=0;
